@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html class="light" lang="ko">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>EML Requirements Analyzer</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"/>
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Tailwind Config -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed-variant": "#802900",
+                        "primary-fixed-dim": "#b1c5ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e1e3e4",
+                        "secondary-container": "#c1d1ff",
+                        "primary-fixed": "#dae2ff",
+                        "on-primary-fixed": "#001946",
+                        "tertiary": "#651f00",
+                        "outline-variant": "#c3c6d5",
+                        "error": "#ba1a1a",
+                        "secondary-fixed": "#dae2ff",
+                        "inverse-primary": "#b1c5ff",
+                        "outline": "#737784",
+                        "on-secondary": "#ffffff",
+                        "background": "#f8f9fa",
+                        "inverse-on-surface": "#f0f1f2",
+                        "primary": "#00327d",
+                        "secondary": "#4e5e85",
+                        "surface-tint": "#2559bd",
+                        "surface-container-high": "#e7e8e9",
+                        "on-tertiary-fixed": "#380d00",
+                        "on-secondary-fixed": "#081a3e",
+                        "surface-container-low": "#f3f4f5",
+                        "on-error-container": "#93000a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e1e3e4",
+                        "tertiary-fixed-dim": "#ffb59a",
+                        "tertiary-fixed": "#ffdbcf",
+                        "on-primary-container": "#a5bdff",
+                        "on-surface-variant": "#434653",
+                        "on-primary-fixed-variant": "#00419e",
+                        "secondary-fixed-dim": "#b6c6f3",
+                        "on-secondary-fixed-variant": "#37466c",
+                        "surface-container": "#edeeef",
+                        "on-secondary-container": "#4a5980",
+                        "on-background": "#191c1d",
+                        "on-surface": "#191c1d",
+                        "tertiary-container": "#8b2e01",
+                        "surface": "#f8f9fa",
+                        "primary-container": "#0047ab",
+                        "surface-dim": "#d9dadb",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2e3132",
+                        "on-tertiary-container": "#ffaa8a",
+                        "surface-bright": "#f8f9fa"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #f8f9fa;
+            color: #191c1d;
+        }
+    </style>
+</head>
+<body class="font-body antialiased overflow-x-hidden">
+<!-- Side Navigation Bar (Desktop Only) -->
+<aside id="sidebar" class="hidden lg:flex fixed left-0 top-0 h-screen w-64 z-50 bg-[#F3F4F5]/90 glass-effect flex-col py-6 border-r border-[#E7E8E9]/30">
+    <div class="px-6 mb-8">
+        <h1 class="text-lg font-black tracking-tighter text-[#00327D] font-headline">Editorial Intelligence</h1>
+        <p class="text-xs text-slate-500 font-medium">Digital Architect</p>
+    </div>
+    <nav class="flex-1 space-y-1">
+        <div id="nav-dashboard" onclick="showMainSection()" class="bg-white/50 text-[#0047AB] rounded-lg shadow-sm font-semibold flex items-center space-x-3 p-3 mx-2 my-1 cursor-pointer hover:bg-white/70 transition-all">
+            <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+            <span>Dashboard</span>
+        </div>
+        <div id="nav-analysis" onclick="showAnalysisSection()" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 mx-2 my-1 cursor-pointer rounded-lg">
+            <span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+            <span>Analysis</span>
+        </div>
+        <div id="nav-history" onclick="showHistorySection()" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 mx-2 my-1 cursor-pointer rounded-lg">
+            <span class="material-symbols-outlined" data-icon="history">history</span>
+            <span>History</span>
+        </div>
+        <div id="nav-settings" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 mx-2 my-1 cursor-pointer rounded-lg">
+            <span class="material-symbols-outlined" data-icon="settings">settings</span>
+            <span>Settings</span>
+        </div>
+    </nav>
+    <div class="px-4 mt-auto">
+        <button class="w-full bg-primary text-on-primary py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-95 flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-sm">add</span> 새 분석 생성
+        </button>
+        <div class="mt-4 p-4 border border-outline-variant/20 rounded-xl bg-white/50">
+            <label class="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2">API Key</label>
+            <input id="api-key-input" type="password" placeholder="sk-ant-..." class="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-lg bg-white focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all" />
+            <p class="text-xs text-slate-500 mt-2">settings에서 저장됩니다</p>
+        </div>
+    </div>
+</aside>
+
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 lg:left-64 right-0 h-16 z-40 bg-[#F8F9FA]/80 glass-effect flex justify-between items-center px-4 lg:px-8 border-b border-[#E7E8E9]/20 shadow-sm shadow-slate-200/50">
+    <div class="flex items-center gap-4">
+        <button id="mobile-menu-btn" class="lg:hidden p-2 hover:bg-surface-container-low rounded-full">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <span class="text-lg lg:text-xl font-bold text-[#0047AB] font-headline">EML Requirements Analyzer</span>
+    </div>
+    <div class="flex items-center gap-3 lg:gap-6">
+        <div class="relative hidden lg:block">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-sm">search</span>
+            <input class="bg-surface-container-high border-none rounded-lg pl-10 pr-4 py-2 text-sm w-64 focus:ring-2 focus:ring-primary/40 transition-all" placeholder="요구사항 검색..." type="text"/>
+        </div>
+        <div class="flex items-center gap-2 lg:gap-3">
+            <button class="p-2 text-slate-500 hover:bg-surface-container-low rounded-full transition-colors active:scale-95">
+                <span class="material-symbols-outlined text-sm lg:text-base" data-icon="notifications">notifications</span>
+            </button>
+            <button class="p-2 text-slate-500 hover:bg-surface-container-low rounded-full transition-colors active:scale-95">
+                <span class="material-symbols-outlined text-sm lg:text-base" data-icon="help">help</span>
+            </button>
+            <div class="h-8 w-8 rounded-full bg-primary-fixed-dim flex items-center justify-center text-primary font-bold cursor-pointer">
+                <span class="material-symbols-outlined text-lg">account_circle</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="lg:ml-64 pt-[6.5rem] lg:pt-[4.5rem] p-4 lg:p-8 min-h-screen pb-24 lg:pb-8">
+    <div class="max-w-7xl mx-auto space-y-8">
+
+        <!-- Section A: Upload Zone + Stats -->
+        <section id="upload-section">
+            <div class="grid grid-cols-12 gap-6">
+                <!-- Upload Zone -->
+                <div id="upload-zone" class="col-span-12 lg:col-span-8 bg-surface-container-lowest p-6 lg:p-8 rounded-xl shadow-sm border-2 border-dashed border-primary/20 hover:border-primary/50 transition-colors group cursor-pointer min-h-[200px] lg:min-h-[240px] flex flex-col items-center justify-center">
+                    <input id="file-input" type="file" multiple accept=".eml" class="hidden" />
+                    <div class="w-12 lg:w-16 h-12 lg:h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-4">
+                        <span class="material-symbols-outlined text-2xl lg:text-3xl">upload_file</span>
+                    </div>
+                    <h3 class="text-base lg:text-lg font-bold text-on-surface mb-2 text-center">분석할 EML 파일을 업로드하세요</h3>
+                    <p class="text-slate-500 text-xs lg:text-sm mb-4 lg:mb-6 text-center">파일을 드래그하거나 클릭하여 업로드하세요<br/><span class="text-xs">지원 형식: .eml</span></p>
+                    <button id="analyze-btn" class="bg-primary text-on-primary px-6 lg:px-8 py-2 lg:py-2.5 rounded-lg font-semibold hover:bg-primary-container transition-all active:scale-95">분석 시작</button>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="col-span-12 lg:col-span-4 grid grid-rows-2 gap-6">
+                    <div class="bg-primary-container/10 p-4 lg:p-6 rounded-xl border border-primary/10">
+                        <p class="text-xs lg:text-sm font-medium text-primary mb-1">금일 분석 수량</p>
+                        <h4 class="text-2xl lg:text-3xl font-black text-primary font-headline" id="today-count">0</h4>
+                        <p class="text-xs text-primary/60 mt-2 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">trending_up</span>
+                            <span id="today-trend">+0%</span>
+                        </p>
+                    </div>
+                    <div class="bg-surface-container-lowest p-4 lg:p-6 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs lg:text-sm font-medium text-slate-500 mb-1">평균 분석 시간</p>
+                            <h4 class="text-2xl lg:text-3xl font-black text-on-surface font-headline" id="avg-time">0.0s</h4>
+                            <p class="text-xs text-green-600 mt-2">최적화 상태: 우수</p>
+                        </div>
+                        <div class="h-10 lg:h-12 w-10 lg:w-12 rounded-lg bg-surface-container-low flex items-center justify-center text-slate-400">
+                            <span class="material-symbols-outlined">timer</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section B: Progress (Hidden until analysis starts) -->
+        <section id="progress-section" class="hidden">
+            <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold">분석 진행 중</h3>
+                    <span id="progress-text" class="text-sm text-slate-500">0/0</span>
+                </div>
+                <div class="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
+                    <div id="progress-bar" class="progress-bar-fill bg-primary h-full" style="width: 0%"></div>
+                </div>
+                <p id="progress-file" class="text-sm text-slate-600 mt-3">파일 대기 중...</p>
+            </div>
+        </section>
+
+        <!-- Section C: Results Table (Hidden until results exist) -->
+        <section id="results-section" class="hidden">
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden">
+                <div class="p-6 flex justify-between items-center border-b border-surface-container">
+                    <h2 class="text-lg lg:text-xl font-bold font-headline">분석 결과 요약</h2>
+                    <button id="download-btn" class="text-sm font-medium px-4 py-2 bg-surface-container-low rounded-lg hover:bg-surface-container-high transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">download</span>
+                        Excel로 다운로드
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs lg:text-sm">
+                        <thead>
+                        <tr class="bg-surface-container-low/50">
+                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">파일명</th>
+                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">회사/부서</th>
+                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">수신 일시</th>
+                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">처리기한</th>
+                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">유형</th>
+                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">우선순위</th>
+                        </tr>
+                        </thead>
+                        <tbody id="results-table-body" class="divide-y divide-surface-container">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section D: Detailed Breakdown (Hidden until row selected) -->
+        <section id="detail-section" class="hidden space-y-6">
+            <div class="flex items-center gap-4">
+                <span class="w-1.5 h-8 bg-primary rounded-full"></span>
+                <h2 class="text-xl lg:text-2xl font-black font-headline text-on-surface">상세 요구사항 분석</h2>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Sidebar Details -->
+                <div class="lg:col-span-1 space-y-4">
+                    <div class="bg-surface-container-lowest p-4 lg:p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">파일 메타데이터</p>
+                        <div class="space-y-4 text-xs lg:text-sm">
+                            <div>
+                                <p class="text-xs text-slate-500 mb-1">수신일시</p>
+                                <p id="detail-received-date" class="text-sm font-semibold">-</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 mb-1">요청자 / 담당자</p>
+                                <p id="detail-requester" class="text-sm font-semibold">-</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 mb-1">마감 기한</p>
+                                <p id="detail-deadline" class="text-sm font-semibold text-error">-</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 mb-1">자동 분류 유형</p>
+                                <p id="detail-type" class="text-sm font-semibold flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                    -
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-primary p-4 lg:p-6 rounded-xl shadow-lg shadow-primary/10 text-on-primary">
+                        <h5 class="font-bold mb-2">AI 요약</h5>
+                        <p id="detail-ai-summary" class="text-xs lg:text-sm leading-relaxed opacity-90">-</p>
+                    </div>
+                </div>
+
+                <!-- Main Requirement List -->
+                <div class="lg:col-span-3 space-y-4">
+                    <div class="bg-surface-container-lowest p-6 lg:p-8 rounded-xl shadow-sm border border-outline-variant/10">
+                        <div class="flex justify-between items-start mb-8">
+                            <div>
+                                <h3 id="detail-filename" class="text-base lg:text-lg font-bold font-headline mb-1">파일명</h3>
+                                <p id="detail-req-count" class="text-xs lg:text-sm text-slate-500">총 0개의 핵심 요구사항이 식별되었습니다.</p>
+                            </div>
+                            <span class="material-symbols-outlined text-slate-300 hidden lg:block">more_horiz</span>
+                        </div>
+                        <div id="detail-requirements" class="space-y-6">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section E: Analysis Tab -->
+        <section id="analysis-section" class="hidden">
+            <div class="flex items-center gap-4 mb-6">
+                <span class="w-1.5 h-8 bg-primary rounded-full"></span>
+                <h2 class="text-2xl font-black font-headline text-on-surface">분석 일정</h2>
+            </div>
+
+            <!-- Date Range Filter -->
+            <div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 mb-6">
+                <div class="flex flex-col lg:flex-row gap-4 items-end">
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2">시작일</label>
+                        <input id="filter-start-date" type="date" class="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all" />
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2">종료일</label>
+                        <input id="filter-end-date" type="date" class="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all" />
+                    </div>
+                    <button onclick="applyDateFilter()" class="bg-primary text-on-primary px-6 py-2 rounded-lg font-semibold hover:bg-primary-container transition-all active:scale-95 whitespace-nowrap">조회</button>
+                    <button onclick="resetDateFilter()" class="border border-outline text-slate-600 px-6 py-2 rounded-lg font-medium hover:bg-surface-container-low transition-all whitespace-nowrap">초기화</button>
+                </div>
+            </div>
+
+            <div id="analysis-content" class="space-y-6">
+                <!-- Gantt Chart Container -->
+                <div id="analysis-gantt" class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                    <p class="text-center text-slate-500 py-8">분석 기록을 불러 중입니다...</p>
+                </div>
+
+                <!-- Detail Container -->
+                <div id="analysis-detail" class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                    <p class="text-center text-slate-500 py-8">항목을 클릭하면 상세 정보가 표시됩니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section F: History Tab -->
+        <section id="history-section" class="hidden">
+            <div class="flex items-center gap-4 mb-6">
+                <span class="w-1.5 h-8 bg-primary rounded-full"></span>
+                <h2 class="text-2xl font-black font-headline text-on-surface">분석 기록</h2>
+            </div>
+            <div id="history-content" class="space-y-6">
+                <p class="text-center text-slate-500 py-8">분석 기록을 불러 중입니다...</p>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<!-- Bottom Navigation Bar (Mobile Only) -->
+<nav id="bottom-nav" class="lg:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe pt-2 bg-[#F8F9FA]/90 backdrop-blur-md z-40 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)] border-t border-[#E7E8E9]">
+    <button onclick="showMainSection()" class="flex flex-col items-center justify-center bg-blue-50 text-blue-700 rounded-xl px-3 py-1.5 active:scale-90 transition-transform cursor-pointer">
+        <span class="material-symbols-outlined text-[22px]">dashboard</span>
+        <span class="font-body text-[9px] font-medium tracking-wide uppercase mt-0.5">Dashboard</span>
+    </button>
+    <button onclick="showAnalysisSection()" class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:text-blue-600 active:scale-90 transition-transform cursor-pointer">
+        <span class="material-symbols-outlined text-[22px]">analytics</span>
+        <span class="font-body text-[9px] font-medium tracking-wide uppercase mt-0.5">Analysis</span>
+    </button>
+    <button onclick="showHistorySection()" class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:text-blue-600 active:scale-90 transition-transform cursor-pointer">
+        <span class="material-symbols-outlined text-[22px]">history</span>
+        <span class="font-body text-[9px] font-medium tracking-wide uppercase mt-0.5">History</span>
+    </button>
+    <button class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:text-blue-600 active:scale-90 transition-transform cursor-pointer">
+        <span class="material-symbols-outlined text-[22px]">settings</span>
+        <span class="font-body text-[9px] font-medium tracking-wide uppercase mt-0.5">Settings</span>
+    </button>
+</nav>
+
+<!-- Mobile Sidebar Overlay (Hidden by default) -->
+<div id="mobile-overlay" class="hidden fixed inset-0 bg-black/30 z-40 lg:hidden"></div>
+
+<!-- Mobile Sidebar (Slides in on menu click) -->
+<aside id="mobile-sidebar" class="hidden fixed left-0 top-0 h-screen w-64 z-50 bg-[#F3F4F5]/95 flex flex-col py-6 lg:hidden">
+    <div class="px-6 mb-8">
+        <h1 class="text-lg font-black tracking-tighter text-[#00327D] font-headline">Editorial Intelligence</h1>
+        <p class="text-xs text-slate-500 font-medium">Digital Architect</p>
+    </div>
+    <nav class="flex-1 space-y-1 px-2">
+        <div onclick="showMainSection(); closeMobileSidebar()" class="bg-white/50 text-[#0047AB] rounded-lg shadow-sm font-semibold flex items-center space-x-3 p-3 cursor-pointer hover:bg-white/70 transition-all">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span>Dashboard</span>
+        </div>
+        <div onclick="showAnalysisSection(); closeMobileSidebar()" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 cursor-pointer rounded-lg">
+            <span class="material-symbols-outlined">analytics</span>
+            <span>Analysis</span>
+        </div>
+        <div onclick="showHistorySection(); closeMobileSidebar()" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 cursor-pointer rounded-lg">
+            <span class="material-symbols-outlined">history</span>
+            <span>History</span>
+        </div>
+        <div class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 cursor-pointer rounded-lg">
+            <span class="material-symbols-outlined">settings</span>
+            <span>Settings</span>
+        </div>
+    </nav>
+    <div class="px-4 mt-auto pb-6 space-y-4">
+        <button class="w-full bg-primary text-on-primary py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-sm">add</span> 새 분석 생성
+        </button>
+        <div class="p-4 border border-outline-variant/20 rounded-xl bg-white/50">
+            <label class="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2">API Key</label>
+            <input id="mobile-api-key-input" type="password" placeholder="sk-ant-..." class="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-lg bg-white focus:ring-2 focus:ring-primary/40 focus:border-transparent" />
+            <p class="text-xs text-slate-500 mt-2">settings에서 저장됩니다</p>
+        </div>
+    </div>
+</aside>
+
+<!-- Deadline Edit Modal -->
+<div id="deadline-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full mx-4">
+        <h3 class="text-lg font-bold mb-4">마감일 수정</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="text-sm font-medium text-slate-700 mb-2 block">마감일 (YYYY-MM-DD)</label>
+                <input id="deadline-input" type="date" class="w-full px-3 py-2 border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all" />
+            </div>
+            <div class="flex gap-2 justify-end">
+                <button onclick="closeDeadlineModal()" class="px-4 py-2 rounded-lg border border-outline text-sm font-medium hover:bg-surface-container-low transition-colors">취소</button>
+                <button onclick="saveDeadline()" class="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary-container transition-all active:scale-95">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+<script src="{{ url_for('static', filename='js/renderer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
