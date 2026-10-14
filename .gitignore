@@ -50,3 +50,10 @@ logs/
 
 # Node modules (if using npm)
 node_modules/
+
+# 첨부파일 원본 저장소 (디스크 보관)
+attachment_store/
+
+# 로컬 개발 서버 데이터 (scripts/dev_server.py)
+.devdata/
+.background.lock

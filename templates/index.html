@@ -77,353 +77,417 @@
             },
         }
     </script>
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-    <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            vertical-align: middle;
-        }
-        body {
-            background-color: #f8f9fa;
-            color: #191c1d;
-        }
-    </style>
+    <!-- 다크모드 초기 적용 (FOUC 방지) -->
+    <script>
+        (function () {
+            try {
+                var dark = localStorage.getItem('eml_dark') === '1';
+                document.documentElement.classList.toggle('dark', dark);
+                document.documentElement.classList.toggle('light', !dark);
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ static_v }}">
 </head>
-<body class="font-body antialiased overflow-x-hidden">
-<!-- Side Navigation Bar (Desktop Only) -->
+<body class="font-body antialiased overflow-x-hidden" data-route="">
+
+<!-- ─── 사이드 내비 (데스크톱) ──────────────────────────────────────────────── -->
 <aside id="sidebar" class="hidden lg:flex fixed left-0 top-0 h-screen w-64 z-50 bg-[#F3F4F5]/90 glass-effect flex-col py-6 border-r border-[#E7E8E9]/30">
     <div class="px-6 mb-8">
         <h1 class="text-lg font-black tracking-tighter text-[#00327D] font-headline">Editorial Intelligence</h1>
         <p class="text-xs text-slate-500 font-medium">Digital Architect</p>
     </div>
     <nav class="flex-1 space-y-1">
-        <div id="nav-dashboard" onclick="showMainSection()" class="bg-white/50 text-[#0047AB] rounded-lg shadow-sm font-semibold flex items-center space-x-3 p-3 mx-2 my-1 cursor-pointer hover:bg-white/70 transition-all">
-            <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
-            <span>Dashboard</span>
-        </div>
-        <div id="nav-analysis" onclick="showAnalysisSection()" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 mx-2 my-1 cursor-pointer rounded-lg">
-            <span class="material-symbols-outlined" data-icon="analytics">analytics</span>
-            <span>Analysis</span>
-        </div>
-        <div id="nav-history" onclick="showHistorySection()" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 mx-2 my-1 cursor-pointer rounded-lg">
-            <span class="material-symbols-outlined" data-icon="history">history</span>
-            <span>History</span>
-        </div>
-        <div id="nav-settings" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 mx-2 my-1 cursor-pointer rounded-lg">
-            <span class="material-symbols-outlined" data-icon="settings">settings</span>
-            <span>Settings</span>
-        </div>
+        <button type="button" data-nav="dashboard" onclick="navTo('dashboard')" class="nav-item"><span class="material-symbols-outlined">dashboard</span><span>대시보드</span></button>
+        <button type="button" data-nav="mail" onclick="navTo('mail')" class="nav-item"><span class="material-symbols-outlined">inbox</span><span>메일</span>
+            <span data-ref="nav-mail-count" class="nav-count hidden"></span></button>
+        <button type="button" data-nav="search" onclick="navTo('search')" class="nav-item"><span class="material-symbols-outlined">search</span><span>AI 검색</span></button>
+        <button type="button" data-nav="settings" onclick="navTo('settings')" class="nav-item"><span class="material-symbols-outlined">settings</span><span>설정</span></button>
     </nav>
-    <div class="px-4 mt-auto">
-        <button class="w-full bg-primary text-on-primary py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-95 flex items-center justify-center gap-2">
-            <span class="material-symbols-outlined text-sm">add</span> 새 분석 생성
-        </button>
-        <div class="mt-4 p-4 border border-outline-variant/20 rounded-xl bg-white/50">
-            <label class="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2">API Key</label>
-            <input id="api-key-input" type="password" placeholder="sk-ant-..." class="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-lg bg-white focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all" />
-            <p class="text-xs text-slate-500 mt-2">settings에서 저장됩니다</p>
-        </div>
-    </div>
 </aside>
 
-<!-- Top App Bar -->
+<!-- ─── 상단 바 ─────────────────────────────────────────────────────────────── -->
 <header class="fixed top-0 left-0 lg:left-64 right-0 h-16 z-40 bg-[#F8F9FA]/80 glass-effect flex justify-between items-center px-4 lg:px-8 border-b border-[#E7E8E9]/20 shadow-sm shadow-slate-200/50">
-    <div class="flex items-center gap-4">
-        <button id="mobile-menu-btn" class="lg:hidden p-2 hover:bg-surface-container-low rounded-full">
+    <div class="flex items-center gap-3 min-w-0">
+        <button id="mobile-menu-btn" type="button" class="lg:hidden p-2 hover:bg-surface-container-low rounded-full" title="메뉴">
             <span class="material-symbols-outlined">menu</span>
         </button>
-        <span class="text-lg lg:text-xl font-bold text-[#0047AB] font-headline">EML Requirements Analyzer</span>
+        <span class="text-lg lg:text-xl font-bold text-[#0047AB] font-headline truncate">EML Requirements Analyzer</span>
     </div>
-    <div class="flex items-center gap-3 lg:gap-6">
-        <div class="relative hidden lg:block">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-sm">search</span>
-            <input class="bg-surface-container-high border-none rounded-lg pl-10 pr-4 py-2 text-sm w-64 focus:ring-2 focus:ring-primary/40 transition-all" placeholder="요구사항 검색..." type="text"/>
-        </div>
-        <div class="flex items-center gap-2 lg:gap-3">
-            <button class="p-2 text-slate-500 hover:bg-surface-container-low rounded-full transition-colors active:scale-95">
-                <span class="material-symbols-outlined text-sm lg:text-base" data-icon="notifications">notifications</span>
+    <div class="flex items-center gap-1 lg:gap-3">
+        <!-- 동기화·분석 현황 -->
+        <div class="relative">
+            <button id="status-btn" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full hover:bg-surface-container-low text-xs lg:text-sm text-slate-600">
+                <span id="status-dot" class="status-dot status-dot-idle"></span>
+                <span id="status-icon" class="material-symbols-outlined text-base">sync</span>
+                <span id="status-text" class="hidden sm:inline whitespace-nowrap">확인 중...</span>
             </button>
-            <button class="p-2 text-slate-500 hover:bg-surface-container-low rounded-full transition-colors active:scale-95">
-                <span class="material-symbols-outlined text-sm lg:text-base" data-icon="help">help</span>
-            </button>
-            <div class="h-8 w-8 rounded-full bg-primary-fixed-dim flex items-center justify-center text-primary font-bold cursor-pointer">
-                <span class="material-symbols-outlined text-lg">account_circle</span>
-            </div>
+            <div id="status-popover" class="hidden absolute right-0 top-full mt-2 w-[min(92vw,380px)] max-h-[75vh] overflow-y-auto bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/20 z-50"></div>
         </div>
+        <button onclick="toggleDarkMode()" type="button" title="다크모드 전환" class="p-2 text-slate-500 hover:bg-surface-container-low rounded-full">
+            <span id="darkmode-icon" class="material-symbols-outlined text-base">dark_mode</span>
+        </button>
+        <button type="button" onclick="navTo('settings')" class="hidden lg:flex items-center gap-2 group" title="설정">
+            <span class="h-8 w-8 rounded-full bg-primary-fixed-dim flex items-center justify-center text-primary"><span class="material-symbols-outlined text-lg">account_circle</span></span>
+            <span data-ref="username" class="text-sm font-medium text-slate-600 group-hover:text-primary"></span>
+        </button>
+        <button onclick="doLogout()" type="button" title="로그아웃" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full">
+            <span class="material-symbols-outlined text-sm">logout</span>
+        </button>
     </div>
 </header>
 
-<!-- Main Content -->
-<main class="lg:ml-64 pt-[6.5rem] lg:pt-[4.5rem] p-4 lg:p-8 min-h-screen pb-24 lg:pb-8">
-    <div class="max-w-7xl mx-auto space-y-8">
+<main class="lg:ml-64 pt-[5rem] lg:pt-[4.5rem] p-4 lg:p-8 min-h-screen pb-24 lg:pb-8">
+    <div id="main-inner" class="max-w-7xl mx-auto">
 
-        <!-- Section A: Upload Zone + Stats -->
-        <section id="upload-section">
+        <!-- ═══ 대시보드 ═══ -->
+        <section id="dashboard-section" class="hidden space-y-6">
             <div class="grid grid-cols-12 gap-6">
-                <!-- Upload Zone -->
-                <div id="upload-zone" class="col-span-12 lg:col-span-8 bg-surface-container-lowest p-6 lg:p-8 rounded-xl shadow-sm border-2 border-dashed border-primary/20 hover:border-primary/50 transition-colors group cursor-pointer min-h-[200px] lg:min-h-[240px] flex flex-col items-center justify-center">
-                    <input id="file-input" type="file" multiple accept=".eml" class="hidden" />
-                    <div class="w-12 lg:w-16 h-12 lg:h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform mb-4">
-                        <span class="material-symbols-outlined text-2xl lg:text-3xl">upload_file</span>
+                <div class="col-span-12 lg:col-span-8 space-y-3">
+                    <div id="upload-zone" class="bg-surface-container-lowest p-6 lg:p-8 rounded-xl shadow-sm border-2 border-dashed border-primary/20 hover:border-primary/50 transition-colors cursor-pointer min-h-[200px] flex flex-col items-center justify-center text-center">
+                        <input id="file-input" type="file" multiple accept=".eml" class="hidden"/>
+                        <div class="w-12 lg:w-14 h-12 lg:h-14 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-3">
+                            <span class="material-symbols-outlined text-2xl">upload_file</span>
+                        </div>
+                        <h3 class="text-base lg:text-lg font-bold text-on-surface mb-1">EML 파일을 끌어다 놓거나 클릭해서 올리세요</h3>
+                        <p class="text-slate-500 text-xs lg:text-sm">올린 메일은 메일함에 저장되고 바로 AI 분석 대기열에 올라갑니다.</p>
+                        <p id="upload-status" class="text-sm font-semibold text-primary mt-3 min-h-[1.25rem]"></p>
                     </div>
-                    <h3 class="text-base lg:text-lg font-bold text-on-surface mb-2 text-center">분석할 EML 파일을 업로드하세요</h3>
-                    <p class="text-slate-500 text-xs lg:text-sm mb-4 lg:mb-6 text-center">파일을 드래그하거나 클릭하여 업로드하세요<br/><span class="text-xs">지원 형식: .eml</span></p>
-                    <button id="analyze-btn" class="bg-primary text-on-primary px-6 lg:px-8 py-2 lg:py-2.5 rounded-lg font-semibold hover:bg-primary-container transition-all active:scale-95">분석 시작</button>
+                    <div id="upload-result" class="hidden"></div>
                 </div>
-
-                <!-- Quick Stats -->
                 <div class="col-span-12 lg:col-span-4 grid grid-rows-2 gap-6">
-                    <div class="bg-primary-container/10 p-4 lg:p-6 rounded-xl border border-primary/10">
-                        <p class="text-xs lg:text-sm font-medium text-primary mb-1">금일 분석 수량</p>
-                        <h4 class="text-2xl lg:text-3xl font-black text-primary font-headline" id="today-count">0</h4>
-                        <p class="text-xs text-primary/60 mt-2 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-xs">trending_up</span>
-                            <span id="today-trend">+0%</span>
-                        </p>
+                    <div class="bg-primary-container/10 p-5 rounded-xl border border-primary/10">
+                        <p class="text-xs lg:text-sm font-medium text-primary mb-1">오늘 분석한 메일</p>
+                        <h4 class="text-3xl font-black text-primary font-headline" id="today-count">0</h4>
+                        <p class="text-xs text-primary/60 mt-1" id="today-trend"></p>
                     </div>
-                    <div class="bg-surface-container-lowest p-4 lg:p-6 rounded-xl border border-outline-variant/10 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p class="text-xs lg:text-sm font-medium text-slate-500 mb-1">평균 분석 시간</p>
-                            <h4 class="text-2xl lg:text-3xl font-black text-on-surface font-headline" id="avg-time">0.0s</h4>
-                            <p class="text-xs text-green-600 mt-2">최적화 상태: 우수</p>
-                        </div>
-                        <div class="h-10 lg:h-12 w-10 lg:w-12 rounded-lg bg-surface-container-low flex items-center justify-center text-slate-400">
-                            <span class="material-symbols-outlined">timer</span>
+                    <div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm">
+                        <p class="text-xs lg:text-sm font-medium text-slate-500 mb-2">처리 현황</p>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <button type="button" onclick="navTo('mail?tab=todo')" class="rounded-lg hover:bg-surface-container-low py-1.5">
+                                <p class="text-2xl font-black font-headline text-on-surface" id="work-todo">0</p><p class="text-xs text-slate-500">할 일</p></button>
+                            <button type="button" onclick="navTo('mail?tab=due')" class="rounded-lg hover:bg-surface-container-low py-1.5">
+                                <p class="text-2xl font-black font-headline text-amber-600" id="work-due">0</p><p class="text-xs text-slate-500">마감임박</p></button>
+                            <button type="button" onclick="navTo('mail?tab=failed')" class="rounded-lg hover:bg-surface-container-low py-1.5">
+                                <p class="text-2xl font-black font-headline text-red-600" id="work-failed">0</p><p class="text-xs text-slate-500">분석실패</p></button>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Section B: Progress (Hidden until analysis starts) -->
-        <section id="progress-section" class="hidden">
-            <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+            <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold">분석 진행 중</h3>
-                    <span id="progress-text" class="text-sm text-slate-500">0/0</span>
+                    <div>
+                        <h3 class="font-bold text-on-surface text-sm lg:text-base">수신 / 분석 추이</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">최근 14일</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-slate-500">
+                        <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-0.5 bg-[#4f86f7] rounded"></span>수신</span>
+                        <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-0.5 bg-[#34c97e] rounded"></span>분석</span>
+                    </div>
                 </div>
-                <div class="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
-                    <div id="progress-bar" class="progress-bar-fill bg-primary h-full" style="width: 0%"></div>
+                <div id="dashboard-chart-wrap" class="relative">
+                    <canvas id="dashboard-chart" height="180" style="width:100%;display:block;"></canvas>
+                    <div id="chart-guide" class="hidden absolute top-0 w-px bg-slate-300 pointer-events-none" style="height:180px;"></div>
+                    <div id="chart-tooltip" class="hidden absolute z-10 pointer-events-none px-3 py-2 rounded-lg bg-slate-800 text-white text-xs shadow-lg whitespace-nowrap"></div>
                 </div>
-                <p id="progress-file" class="text-sm text-slate-600 mt-3">파일 대기 중...</p>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-outline-variant/10">
+                    <h3 class="font-bold text-on-surface text-sm lg:text-base">최근 수신 메일</h3>
+                    <button type="button" onclick="navTo('mail?tab=all')" class="text-xs text-primary hover:underline">전체 보기</button>
+                </div>
+                <div id="dashboard-recent-list"><p class="text-center text-slate-400 text-sm py-8">불러오는 중...</p></div>
             </div>
         </section>
 
-        <!-- Section C: Results Table (Hidden until results exist) -->
-        <section id="results-section" class="hidden">
-            <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden">
-                <div class="p-6 flex justify-between items-center border-b border-surface-container">
-                    <h2 class="text-lg lg:text-xl font-bold font-headline">분석 결과 요약</h2>
-                    <button id="download-btn" class="text-sm font-medium px-4 py-2 bg-surface-container-low rounded-lg hover:bg-surface-container-high transition-colors flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">download</span>
-                        Excel로 다운로드
+        <!-- ═══ 메일 (받은메일함 + 분석 일정 + 분석 기록 통합) ═══ -->
+        <section id="mail-section" class="hidden flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <div id="mail-tabs" class="flex flex-wrap items-center gap-1 p-1 bg-surface-container-low rounded-xl"></div>
+                <div class="ml-auto inline-flex p-1 bg-surface-container-low rounded-xl">
+                    <button id="mail-view-list" type="button" class="view-btn"><span class="material-symbols-outlined text-base">view_list</span>목록</button>
+                    <button id="mail-view-gantt" type="button" class="view-btn"><span class="material-symbols-outlined text-base">view_timeline</span>일정</button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <div class="relative w-full sm:w-72">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-base pointer-events-none">search</span>
+                    <input id="mail-search" type="search" placeholder="제목 · 보낸 곳 · 내용 검색  ( / )"
+                        class="w-full pl-10 pr-9 py-2 text-sm border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-transparent bg-white"/>
+                    <button id="mail-search-clear" type="button" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:bg-surface-container-low" title="지우기">
+                        <span class="material-symbols-outlined text-sm">close</span>
                     </button>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs lg:text-sm">
-                        <thead>
-                        <tr class="bg-surface-container-low/50">
-                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">파일명</th>
-                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">회사/부서</th>
-                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">수신 일시</th>
-                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">처리기한</th>
-                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">유형</th>
-                            <th class="px-4 lg:px-6 py-3 lg:py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">우선순위</th>
-                        </tr>
-                        </thead>
-                        <tbody id="results-table-body" class="divide-y divide-surface-container">
-                        </tbody>
-                    </table>
+                <div class="relative" id="mail-facet-control">
+                    <button id="mail-facet-btn" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-slate-600 bg-surface-container-low rounded-lg hover:bg-surface-container-high">
+                        <span class="material-symbols-outlined text-base">tune</span>분류<span data-ref="count" class="text-primary"></span>
+                        <span data-ref="icon" class="material-symbols-outlined text-base">expand_more</span>
+                    </button>
+                    <div id="mail-facet-panel" class="hidden absolute z-30 mt-2 left-0 w-[min(92vw,540px)] p-4 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/20 space-y-3"></div>
                 </div>
+                <div id="mail-facet-summary" class="flex flex-wrap items-center gap-1.5"></div>
+                <div class="flex flex-wrap items-center gap-2 ml-auto">
+                    <select id="mail-account" class="text-sm border border-outline-variant/30 rounded-lg px-3 py-1.5 bg-white focus:ring-2 focus:ring-primary/40">
+                        <option value="">전체 계정</option><option value="upload">업로드한 메일</option>
+                    </select>
+                    <select id="mail-sort" class="text-sm border border-outline-variant/30 rounded-lg px-3 py-1.5 bg-white focus:ring-2 focus:ring-primary/40"></select>
+                    <label class="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none">
+                        <input id="mail-unread" type="checkbox" class="w-4 h-4 rounded accent-[#0047AB]"/>안읽음만
+                    </label>
+                </div>
+                <div id="mail-range" class="hidden w-full flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500">기간</span>
+                    <input id="mail-from" type="date" class="text-sm border border-outline-variant/30 rounded-lg px-2 py-1 bg-white"/>
+                    <span class="text-slate-400">~</span>
+                    <input id="mail-to" type="date" class="text-sm border border-outline-variant/30 rounded-lg px-2 py-1 bg-white"/>
+                    <button type="button" data-range="7,14" class="date-preset-btn">-1주 ~ +2주</button>
+                    <button type="button" data-range="14,30" class="date-preset-btn">-2주 ~ +1달</button>
+                    <button type="button" data-range="30,60" class="date-preset-btn">-1달 ~ +2달</button>
+                </div>
+            </div>
+            <p id="mail-notice" class="hidden text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2"></p>
+
+            <div class="relative flex-1 min-h-0 flex gap-4">
+                <div class="@container flex-1 min-w-0 flex flex-col bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden min-h-[60vh] lg:min-h-0">
+                    <div id="mail-banner" class="hidden shrink-0 flex items-center gap-2 px-4 py-2 text-sm bg-blue-50 text-blue-800 border-b border-blue-100"></div>
+                    <div id="mail-bulk" class="hidden shrink-0 flex flex-wrap items-center gap-1.5 px-3 py-2 bg-primary/5 border-b border-primary/10"></div>
+                    <div id="mail-list-wrap" class="flex-1 min-h-0 overflow-auto">
+                        <table id="mail-table" class="w-full text-sm"><tbody></tbody></table>
+                        <div id="mail-gantt" class="hidden p-3 lg:p-4"></div>
+                    </div>
+                    <div id="mail-footer" class="shrink-0 px-4 py-2 border-t border-outline-variant/10 flex items-center gap-3 text-xs text-slate-500">
+                        <span id="mail-total"></span>
+                        <div id="mail-pager" class="flex items-center gap-0.5"></div>
+                        <span class="hidden xl:inline ml-auto text-[11px] text-slate-400">j/k 이동 · e 완료 · x 제외 · d 마감 · u 읽음 · / 검색</span>
+                    </div>
+                </div>
+                <aside id="mail-panel" class="mail-panel hidden bg-surface-container-lowest border border-outline-variant/10" aria-label="메일 상세"></aside>
             </div>
         </section>
 
-        <!-- Section D: Detailed Breakdown (Hidden until row selected) -->
-        <section id="detail-section" class="hidden space-y-6">
-            <div class="flex items-center gap-4">
-                <span class="w-1.5 h-8 bg-primary rounded-full"></span>
-                <h2 class="text-xl lg:text-2xl font-black font-headline text-on-surface">상세 요구사항 분석</h2>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <!-- Sidebar Details -->
-                <div class="lg:col-span-1 space-y-4">
-                    <div class="bg-surface-container-lowest p-4 lg:p-6 rounded-xl shadow-sm border border-outline-variant/10">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">파일 메타데이터</p>
-                        <div class="space-y-4 text-xs lg:text-sm">
-                            <div>
-                                <p class="text-xs text-slate-500 mb-1">수신일시</p>
-                                <p id="detail-received-date" class="text-sm font-semibold">-</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 mb-1">요청자 / 담당자</p>
-                                <p id="detail-requester" class="text-sm font-semibold">-</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 mb-1">마감 기한</p>
-                                <p id="detail-deadline" class="text-sm font-semibold text-error">-</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 mb-1">자동 분류 유형</p>
-                                <p id="detail-type" class="text-sm font-semibold flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-secondary"></span>
-                                    -
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-primary p-4 lg:p-6 rounded-xl shadow-lg shadow-primary/10 text-on-primary">
-                        <h5 class="font-bold mb-2">AI 요약</h5>
-                        <p id="detail-ai-summary" class="text-xs lg:text-sm leading-relaxed opacity-90">-</p>
-                    </div>
-                </div>
-
-                <!-- Main Requirement List -->
-                <div class="lg:col-span-3 space-y-4">
-                    <div class="bg-surface-container-lowest p-6 lg:p-8 rounded-xl shadow-sm border border-outline-variant/10">
-                        <div class="flex justify-between items-start mb-8">
-                            <div>
-                                <h3 id="detail-filename" class="text-base lg:text-lg font-bold font-headline mb-1">파일명</h3>
-                                <p id="detail-req-count" class="text-xs lg:text-sm text-slate-500">총 0개의 핵심 요구사항이 식별되었습니다.</p>
-                            </div>
-                            <span class="material-symbols-outlined text-slate-300 hidden lg:block">more_horiz</span>
-                        </div>
-                        <div id="detail-requirements" class="space-y-6">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section E: Analysis Tab -->
-        <section id="analysis-section" class="hidden">
+        <!-- ═══ AI 검색 ═══ -->
+        <section id="ai-search-section" class="hidden">
             <div class="flex items-center gap-4 mb-6">
                 <span class="w-1.5 h-8 bg-primary rounded-full"></span>
-                <h2 class="text-2xl font-black font-headline text-on-surface">분석 일정</h2>
+                <h2 class="text-2xl font-black font-headline text-on-surface">AI 검색</h2>
             </div>
-
-            <!-- Date Range Filter -->
-            <div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 mb-6">
-                <div class="flex flex-col lg:flex-row gap-4 items-end">
-                    <div class="flex-1">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2">시작일</label>
-                        <input id="filter-start-date" type="date" class="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all" />
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2">종료일</label>
-                        <input id="filter-end-date" type="date" class="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all" />
-                    </div>
-                    <button onclick="applyDateFilter()" class="bg-primary text-on-primary px-6 py-2 rounded-lg font-semibold hover:bg-primary-container transition-all active:scale-95 whitespace-nowrap">조회</button>
-                    <button onclick="resetDateFilter()" class="border border-outline text-slate-600 px-6 py-2 rounded-lg font-medium hover:bg-surface-container-low transition-all whitespace-nowrap">초기화</button>
-                </div>
+            <p class="text-sm text-slate-500 mb-4">분석된 메일을 자연어로 물어보세요. (예: "이번 달에 온 견적 요청 중 아직 완료 안 된 거 뭐 있어?")</p>
+            <div class="flex gap-2 mb-6">
+                <input id="ai-search-input" type="text" placeholder="예) 지난주에 온 회의요청 메일 있어?"
+                    onkeydown="if(event.key==='Enter') runAiSearch()"
+                    class="flex-1 px-4 py-3 text-sm border border-outline-variant/30 rounded-lg bg-white focus:ring-2 focus:ring-primary/40 focus:border-transparent"/>
+                <button onclick="runAiSearch()" id="ai-search-btn" type="button"
+                    class="px-6 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container active:scale-95 flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="material-symbols-outlined text-sm">search</span>검색
+                </button>
             </div>
-
-            <div id="analysis-content" class="space-y-6">
-                <!-- Gantt Chart Container -->
-                <div id="analysis-gantt" class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
-                    <p class="text-center text-slate-500 py-8">분석 기록을 불러 중입니다...</p>
-                </div>
-
-                <!-- Detail Container -->
-                <div id="analysis-detail" class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
-                    <p class="text-center text-slate-500 py-8">항목을 클릭하면 상세 정보가 표시됩니다.</p>
-                </div>
-            </div>
+            <div id="ai-search-result"></div>
         </section>
 
-        <!-- Section F: History Tab -->
-        <section id="history-section" class="hidden">
+        <!-- ═══ 설정 ═══ -->
+        <section id="settings-section" class="hidden">
             <div class="flex items-center gap-4 mb-6">
                 <span class="w-1.5 h-8 bg-primary rounded-full"></span>
-                <h2 class="text-2xl font-black font-headline text-on-surface">분석 기록</h2>
+                <h2 class="text-2xl font-black font-headline text-on-surface">설정</h2>
             </div>
-            <div id="history-content" class="space-y-6">
-                <p class="text-center text-slate-500 py-8">분석 기록을 불러 중입니다...</p>
+
+            <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10 max-w-md">
+                <h3 class="font-bold text-on-surface mb-1">계정 정보</h3>
+                <p class="text-xs text-slate-500 mb-4">현재 로그인된 계정입니다.</p>
+                <div class="flex items-center gap-3 p-3 bg-surface-container-low rounded-lg">
+                    <span class="material-symbols-outlined text-primary">account_circle</span>
+                    <span data-ref="username" class="font-semibold text-on-surface"></span>
+                </div>
+                <button onclick="doLogout()" type="button" class="mt-4 w-full border border-red-200 text-red-600 font-medium py-2 rounded-lg hover:bg-red-50">로그아웃</button>
+            </div>
+
+            <div class="mt-6 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="material-symbols-outlined text-primary text-lg">bolt</span>
+                            <h3 class="font-bold text-on-surface">자동 분석</h3>
+                        </div>
+                        <p class="text-xs text-slate-500">새 메일이 오면 자동으로 분석합니다 (최근 30일 안에 받은 메일). 시간 초과 같은 일시적 오류는 2·5·15·30·60분 간격으로 최대 6번 다시 시도하고, API 키 같은 설정 문제는 설정을 고치면 바로 다시 시작합니다.</p>
+                    </div>
+                    <button id="auto-analyze-toggle" type="button" onclick="toggleAutoAnalyze()"
+                        class="relative shrink-0 w-12 h-7 rounded-full transition-colors bg-slate-300" role="switch" aria-checked="false" aria-label="자동 분석">
+                        <span class="absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-primary text-lg">smart_toy</span>
+                    <h3 class="font-bold text-on-surface">AI 모델</h3>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">메일 분석에 사용할 LLM 프로바이더와 모델을 선택하세요. 사내 원격 서버는 공유 추론 서버라 로드된 모델이 수시로 바뀔 수 있어, 모델 목록을 실시간으로 조회합니다.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 block mb-1" for="llm-provider">프로바이더</label>
+                        <select id="llm-provider" onchange="onLlmProviderChange()" class="w-full px-3 py-2.5 text-sm border border-outline-variant/30 rounded-lg bg-white focus:ring-2 focus:ring-primary/40">
+                            <option value="remote">사내 원격 서버</option>
+                            <option value="anthropic">Claude (Anthropic)</option>
+                            <option value="openai">OpenAI (GPT)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 block mb-1" for="llm-model">모델</label>
+                        <select id="llm-model" class="w-full px-3 py-2.5 text-sm border border-outline-variant/30 rounded-lg bg-white focus:ring-2 focus:ring-primary/40"></select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 mt-4">
+                    <button onclick="saveLlmSettings()" type="button" class="bg-primary text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-primary-container active:scale-95">저장</button>
+                    <button onclick="testLlmConnection()" id="llm-test-btn" type="button"
+                        class="border border-outline-variant/30 text-slate-600 font-semibold px-5 py-2.5 rounded-lg hover:bg-surface-container-low active:scale-95 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">wifi_tethering</span>연결 테스트
+                    </button>
+                    <span id="llm-settings-status" class="text-xs text-slate-400"></span>
+                </div>
+                <div id="llm-test-result" class="hidden mt-3 text-xs px-3 py-2 rounded-lg"></div>
+            </div>
+
+            <div class="mt-6 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-primary text-lg">key</span>
+                    <h3 class="font-bold text-on-surface">API 키 관리</h3>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">프로바이더별로 API 키를 저장·교체·삭제할 수 있습니다. DB에 암호화 저장되며 브라우저에는 저장되지 않습니다.</p>
+                <div id="api-keys-list" class="space-y-3"></div>
+            </div>
+
+            <div class="mt-6 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-primary text-lg">auto_awesome</span>
+                    <h3 class="font-bold text-on-surface">AI 분석 기본 지침</h3>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">모든 메일 분석(자동 분석 포함)에 함께 전달할 지침을 자연어로 입력하세요. (예: "우리 회사명은 유시스이며, 우리에게 온 요청만 추출해줘. 금액은 VAT 포함 여부를 꼭 표기해줘.")</p>
+                <textarea id="settings-analysis-prompt" rows="5" placeholder="예) 견적 요청이면 납품 기한과 수량을 반드시 요약에 포함하고, 우선순위는 마감일 기준으로 판단해줘."
+                    class="w-full px-4 py-3 text-sm border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-transparent mb-3 resize-y leading-relaxed"></textarea>
+                <div class="flex items-center gap-3">
+                    <button onclick="saveAnalysisPrompt()" type="button" class="bg-primary text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-primary-container active:scale-95">저장</button>
+                    <span id="analysis-prompt-status" class="text-xs text-slate-400"></span>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-on-surface">연결된 메일 계정</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">IMAP으로 주기적으로 자동 수신합니다. 동기화 상태는 상단의 현황 표시에서도 볼 수 있습니다.</p>
+                    </div>
+                    <button onclick="openAddAccountModal()" type="button" class="text-sm font-medium px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-container flex items-center gap-1.5 shrink-0">
+                        <span class="material-symbols-outlined text-sm">add</span>계정 추가
+                    </button>
+                </div>
+                <div id="accounts-list" class="space-y-3"><p class="text-center text-slate-400 py-6 text-sm">불러오는 중...</p></div>
             </div>
         </section>
-
     </div>
 </main>
 
-<!-- Bottom Navigation Bar (Mobile Only) -->
+<!-- ─── 하단 내비 (모바일) ─────────────────────────────────────────────────── -->
 <nav id="bottom-nav" class="lg:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe pt-2 bg-[#F8F9FA]/90 backdrop-blur-md z-40 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)] border-t border-[#E7E8E9]">
-    <button onclick="showMainSection()" class="flex flex-col items-center justify-center bg-blue-50 text-blue-700 rounded-xl px-3 py-1.5 active:scale-90 transition-transform cursor-pointer">
-        <span class="material-symbols-outlined text-[22px]">dashboard</span>
-        <span class="font-body text-[9px] font-medium tracking-wide uppercase mt-0.5">Dashboard</span>
-    </button>
-    <button onclick="showAnalysisSection()" class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:text-blue-600 active:scale-90 transition-transform cursor-pointer">
-        <span class="material-symbols-outlined text-[22px]">analytics</span>
-        <span class="font-body text-[9px] font-medium tracking-wide uppercase mt-0.5">Analysis</span>
-    </button>
-    <button onclick="showHistorySection()" class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:text-blue-600 active:scale-90 transition-transform cursor-pointer">
-        <span class="material-symbols-outlined text-[22px]">history</span>
-        <span class="font-body text-[9px] font-medium tracking-wide uppercase mt-0.5">History</span>
-    </button>
-    <button class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5 hover:text-blue-600 active:scale-90 transition-transform cursor-pointer">
-        <span class="material-symbols-outlined text-[22px]">settings</span>
-        <span class="font-body text-[9px] font-medium tracking-wide uppercase mt-0.5">Settings</span>
-    </button>
+    <button type="button" data-nav="dashboard" onclick="navTo('dashboard')" class="bottom-nav-item"><span class="material-symbols-outlined text-[22px]">dashboard</span><span>대시보드</span></button>
+    <button type="button" data-nav="mail" onclick="navTo('mail')" class="bottom-nav-item relative"><span class="material-symbols-outlined text-[22px]">inbox</span><span>메일</span>
+        <span data-ref="nav-mail-count" class="nav-count nav-count-float hidden"></span></button>
+    <button type="button" data-nav="search" onclick="navTo('search')" class="bottom-nav-item"><span class="material-symbols-outlined text-[22px]">search</span><span>AI 검색</span></button>
+    <button type="button" data-nav="settings" onclick="navTo('settings')" class="bottom-nav-item"><span class="material-symbols-outlined text-[22px]">settings</span><span>설정</span></button>
 </nav>
 
-<!-- Mobile Sidebar Overlay (Hidden by default) -->
+<!-- ─── 모바일 사이드바 ─────────────────────────────────────────────────────── -->
 <div id="mobile-overlay" class="hidden fixed inset-0 bg-black/30 z-40 lg:hidden"></div>
-
-<!-- Mobile Sidebar (Slides in on menu click) -->
-<aside id="mobile-sidebar" class="hidden fixed left-0 top-0 h-screen w-64 z-50 bg-[#F3F4F5]/95 flex flex-col py-6 lg:hidden">
+<aside id="mobile-sidebar" class="hidden fixed left-0 top-0 h-screen w-64 z-50 bg-[#F3F4F5]/95 flex-col py-6 lg:hidden">
     <div class="px-6 mb-8">
         <h1 class="text-lg font-black tracking-tighter text-[#00327D] font-headline">Editorial Intelligence</h1>
         <p class="text-xs text-slate-500 font-medium">Digital Architect</p>
     </div>
-    <nav class="flex-1 space-y-1 px-2">
-        <div onclick="showMainSection(); closeMobileSidebar()" class="bg-white/50 text-[#0047AB] rounded-lg shadow-sm font-semibold flex items-center space-x-3 p-3 cursor-pointer hover:bg-white/70 transition-all">
-            <span class="material-symbols-outlined">dashboard</span>
-            <span>Dashboard</span>
-        </div>
-        <div onclick="showAnalysisSection(); closeMobileSidebar()" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 cursor-pointer rounded-lg">
-            <span class="material-symbols-outlined">analytics</span>
-            <span>Analysis</span>
-        </div>
-        <div onclick="showHistorySection(); closeMobileSidebar()" class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 cursor-pointer rounded-lg">
-            <span class="material-symbols-outlined">history</span>
-            <span>History</span>
-        </div>
-        <div class="text-slate-600 hover:text-[#0047AB] hover:bg-white/30 transition-all flex items-center space-x-3 p-3 cursor-pointer rounded-lg">
-            <span class="material-symbols-outlined">settings</span>
-            <span>Settings</span>
-        </div>
+    <nav class="flex-1 space-y-1">
+        <button type="button" data-nav="dashboard" onclick="navTo('dashboard')" class="nav-item"><span class="material-symbols-outlined">dashboard</span><span>대시보드</span></button>
+        <button type="button" data-nav="mail" onclick="navTo('mail')" class="nav-item"><span class="material-symbols-outlined">inbox</span><span>메일</span></button>
+        <button type="button" data-nav="search" onclick="navTo('search')" class="nav-item"><span class="material-symbols-outlined">search</span><span>AI 검색</span></button>
+        <button type="button" data-nav="settings" onclick="navTo('settings')" class="nav-item"><span class="material-symbols-outlined">settings</span><span>설정</span></button>
     </nav>
-    <div class="px-4 mt-auto pb-6 space-y-4">
-        <button class="w-full bg-primary text-on-primary py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
-            <span class="material-symbols-outlined text-sm">add</span> 새 분석 생성
-        </button>
-        <div class="p-4 border border-outline-variant/20 rounded-xl bg-white/50">
-            <label class="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2">API Key</label>
-            <input id="mobile-api-key-input" type="password" placeholder="sk-ant-..." class="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-lg bg-white focus:ring-2 focus:ring-primary/40 focus:border-transparent" />
-            <p class="text-xs text-slate-500 mt-2">settings에서 저장됩니다</p>
-        </div>
-    </div>
 </aside>
 
-<!-- Deadline Edit Modal -->
-<div id="deadline-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-    <div class="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full mx-4">
-        <h3 class="text-lg font-bold mb-4">마감일 수정</h3>
-        <div class="space-y-4">
+<!-- ─── 계정 추가 모달 ──────────────────────────────────────────────────────── -->
+<div id="add-account-modal" class="app-modal hidden fixed inset-0 bg-black/50 z-[150] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[92vh] overflow-y-auto">
+        <h3 class="text-lg font-bold mb-1">메일 계정 추가</h3>
+        <p class="text-xs text-slate-500 mb-5">IMAP 정보를 입력하세요. 비밀번호는 암호화 저장됩니다.</p>
+        <div class="space-y-3">
             <div>
-                <label class="text-sm font-medium text-slate-700 mb-2 block">마감일 (YYYY-MM-DD)</label>
-                <input id="deadline-input" type="date" class="w-full px-3 py-2 border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40 focus:border-transparent transition-all" />
+                <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1.5" for="acc-preset">서버 프리셋</label>
+                <select id="acc-preset" onchange="applyPreset()" class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/40">
+                    <option value="">직접 입력</option>
+                    <option value="daum">다음 (imap.daum.net)</option>
+                    <option value="kakao">카카오 (imap.kakao.com)</option>
+                    <option value="gmail">Gmail (imap.gmail.com)</option>
+                    <option value="naver">네이버 (imap.naver.com)</option>
+                    <option value="outlook">Outlook (outlook.office365.com)</option>
+                </select>
             </div>
-            <div class="flex gap-2 justify-end">
-                <button onclick="closeDeadlineModal()" class="px-4 py-2 rounded-lg border border-outline text-sm font-medium hover:bg-surface-container-low transition-colors">취소</button>
-                <button onclick="saveDeadline()" class="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary-container transition-all active:scale-95">저장</button>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2">
+                    <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1.5" for="acc-label">계정 별칭</label>
+                    <input id="acc-label" type="text" placeholder="예: 회사 다음메일" class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/40"/>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1.5" for="acc-email">이메일 주소</label>
+                    <input id="acc-email" type="email" placeholder="me@daum.net" class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/40"/>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1.5" for="acc-server">IMAP 서버</label>
+                    <input id="acc-server" type="text" placeholder="imap.daum.net" class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/40"/>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1.5" for="acc-port">포트</label>
+                    <input id="acc-port" type="number" value="993" class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/40"/>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1.5" for="acc-username">IMAP 아이디</label>
+                    <input id="acc-username" type="text" placeholder="me@daum.net" class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/40"/>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1.5" for="acc-password">비밀번호</label>
+                    <input id="acc-password" type="password" placeholder="앱 비밀번호 또는 계정 비밀번호" autocomplete="new-password" class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/40"/>
+                    <p class="text-xs text-slate-400 mt-1">Gmail은 앱 비밀번호 필요 (Google 계정 → 보안 → 앱 비밀번호)</p>
+                </div>
             </div>
+            <div id="acc-error" class="hidden text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
+        </div>
+        <div class="flex gap-2 mt-6">
+            <button type="button" onclick="testAccountConn(this)" class="flex-1 border border-outline text-slate-600 font-medium py-2.5 rounded-lg hover:bg-surface-container-low text-sm">연결 테스트</button>
+            <button type="button" onclick="closeAddAccountModal()" class="px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50">취소</button>
+            <button type="button" onclick="submitAddAccount(this)" class="flex-1 bg-primary text-white font-semibold py-2.5 rounded-lg hover:bg-primary-container active:scale-95 text-sm">추가</button>
         </div>
     </div>
 </div>
 
-<!-- Scripts -->
-<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
-<script src="{{ url_for('static', filename='js/renderer.js') }}"></script>
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<!-- ─── 이미지 라이트박스 ───────────────────────────────────────────────────── -->
+<div id="image-lightbox" class="fixed inset-0 z-[300] hidden bg-black/90 backdrop-blur-sm flex items-center justify-center" onclick="closeLightbox(event)">
+    <button type="button" onclick="closeLightbox(event)" class="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center z-10" title="닫기">
+        <span class="material-symbols-outlined">close</span>
+    </button>
+    <button id="lightbox-prev" type="button" onclick="lightboxNav(-1, event)" class="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center z-10">
+        <span class="material-symbols-outlined text-2xl">chevron_left</span>
+    </button>
+    <div class="max-w-[94vw] max-h-[90vh] overflow-auto flex items-center justify-center">
+        <img id="lightbox-img" src="" alt="" onclick="toggleLightboxZoom(event)" class="max-w-[92vw] max-h-[86vh] object-contain transition-transform duration-200 cursor-zoom-in select-none"/>
+    </div>
+    <button id="lightbox-next" type="button" onclick="lightboxNav(1, event)" class="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center z-10">
+        <span class="material-symbols-outlined text-2xl">chevron_right</span>
+    </button>
+    <div id="lightbox-label" class="absolute bottom-5 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-black/50 text-white text-xs font-medium max-w-[80vw] truncate"></div>
+</div>
+
+<!-- Scripts (순서 중요: core → store → mailui → attachments → panel → gantt → mail → status → upload → accounts → app) -->
+{% for name in ['core', 'store', 'mailui', 'attachments', 'panel', 'gantt', 'mail', 'status', 'upload', 'accounts', 'app'] %}
+<script src="{{ url_for('static', filename='js/' ~ name ~ '.js') }}?v={{ static_v }}"></script>
+{% endfor %}
 </body>
 </html>

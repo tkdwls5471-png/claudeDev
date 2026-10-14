@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EML Analyzer Dashboard</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Fonts: Manrope & Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-high": "#e7e8e9",
+              "on-tertiary-fixed": "#380d00",
+              "surface-tint": "#2559bd",
+              "on-secondary-fixed": "#081a3e",
+              "secondary": "#4e5e85",
+              "primary": "#00327d",
+              "outline-variant": "#c3c6d5",
+              "secondary-fixed": "#dae2ff",
+              "error": "#ba1a1a",
+              "tertiary": "#651f00",
+              "inverse-on-surface": "#f0f1f2",
+              "background": "#f8f9fa",
+              "inverse-primary": "#b1c5ff",
+              "outline": "#737784",
+              "on-secondary": "#ffffff",
+              "primary-fixed-dim": "#b1c5ff",
+              "surface-variant": "#e1e3e4",
+              "secondary-container": "#c1d1ff",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-fixed-variant": "#802900",
+              "on-primary-fixed": "#001946",
+              "primary-fixed": "#dae2ff",
+              "surface-dim": "#d9dadb",
+              "primary-container": "#0047ab",
+              "surface": "#f8f9fa",
+              "surface-bright": "#f8f9fa",
+              "on-primary": "#ffffff",
+              "on-tertiary-container": "#ffaa8a",
+              "inverse-surface": "#2e3132",
+              "on-secondary-container": "#4a5980",
+              "tertiary-container": "#8b2e01",
+              "on-surface": "#191c1d",
+              "on-background": "#191c1d",
+              "tertiary-fixed": "#ffdbcf",
+              "surface-container": "#edeeef",
+              "on-primary-container": "#a5bdff",
+              "secondary-fixed-dim": "#b6c6f3",
+              "on-surface-variant": "#434653",
+              "on-secondary-fixed-variant": "#37466c",
+              "on-primary-fixed-variant": "#00419e",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-low": "#f3f4f5",
+              "on-error-container": "#93000a",
+              "surface-container-highest": "#e1e3e4",
+              "tertiary-fixed-dim": "#ffb59a",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA;
+            color: #191C1D;
+        }
+        h1, h2, h3 {
+            font-family: 'Manrope', sans-serif;
+        }
+        .editorial-shadow {
+            box-shadow: 0 10px 30px -10px rgba(0, 50, 125, 0.08);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-[#F8F9FA] dark:bg-slate-900/80 backdrop-blur-xl docked full-width top-0 sticky z-50 shadow-sm dark:shadow-none">
+<div class="flex items-center justify-between px-6 py-3 w-full">
+<div class="flex items-center gap-4">
+<button class="text-blue-700 dark:text-blue-400 active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-['Manrope'] font-bold text-lg tracking-tight text-blue-700 dark:text-blue-400">EML Analyzer</h1>
+</div>
+<div class="h-8 w-8 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden border border-outline-variant/20">
+<img alt="User" data-alt="close-up portrait of a professional technical lead with soft studio lighting and neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAon73YJDEZT_1iCrJytCBF4Vn5UvMtgWjQVyRndEQTOWwMvxUvY8udXV-3a5Y2VbSkGqa6xX-mgRu0mXK5IKTu5XDtVt5RvHJRkf5YlVRAAo6ZgAW4ZfZDWPJlKJFtvyL2-DgfFH6HS6-PexGfhfvtjMaecX2e3medXs6ptfiWYPEJJZu6igdmthOXVr1GQhQ8Ufc4i9fxfE2jDCkSJQ6F5gmEACNpkKz_wphPgQ9U1u577vg8X1ugw2oKLfeNGNo20XDj8PZi2IeW"/>
+</div>
+</div>
+<div class="bg-[#E7E8E9] h-[1px] w-full opacity-20"></div>
+</header>
+<main class="px-5 pt-6 pb-32 space-y-8">
+<!-- Welcome & Quick Stats -->
+<section class="space-y-4">
+<div class="space-y-1">
+<p class="text-label-sm font-medium text-secondary uppercase tracking-wider">운영 개요</p>
+<h2 class="text-2xl font-extrabold text-on-surface tracking-tight">기술 대시보드</h2>
+</div>
+<!-- Asymmetric Bento Stats -->
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-surface-container-lowest p-5 rounded-xl editorial-shadow border border-outline-variant/10">
+<div class="flex flex-col h-full justify-between">
+<span class="material-symbols-outlined text-primary mb-3" data-icon="query_stats">query_stats</span>
+<div>
+<p class="text-[32px] font-extrabold text-primary leading-none">24</p>
+<p class="text-xs font-medium text-secondary mt-1">Daily Analyses</p>
+</div>
+</div>
+</div>
+<div class="bg-primary-container p-5 rounded-xl editorial-shadow">
+<div class="flex flex-col h-full justify-between text-on-primary">
+<span class="material-symbols-outlined mb-3 opacity-80" data-icon="speed">speed</span>
+<div>
+<p class="text-[32px] font-extrabold leading-none">1.2<span class="text-sm font-normal ml-1">s</span></p>
+<p class="text-xs font-medium opacity-80 mt-1">평균 처리 시간</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Analysis Trigger Card -->
+<section class="bg-surface-container-lowest p-6 rounded-xl editorial-shadow border border-outline-variant/10 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+<div class="relative z-10 space-y-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="upload_file">upload_file</span>
+</div>
+<h3 class="font-bold text-lg text-on-surface">EML 데이터 가져오기</h3>
+</div>
+<div class="border-2 border-dashed border-outline-variant/40 rounded-xl p-8 flex flex-col items-center justify-center bg-surface-container-low/50">
+<span class="material-symbols-outlined text-outline text-4xl mb-2" data-icon="cloud_upload">cloud_upload</span>
+<p class="text-sm text-on-surface-variant font-medium text-center">파일을 드래그하거나 <span class="text-primary cursor-pointer underline underline-offset-2">브라우저</span>에서 선택하세요</p>
+<p class="text-[10px] text-outline mt-1">.eml, .msg, .pdf 지원</p>
+</div>
+<button class="w-full bg-gradient-to-br from-primary-container to-primary text-on-primary py-4 rounded-xl font-bold tracking-tight text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+<span>분석 시작</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</section>
+<!-- Analysis Results Summary List -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="font-bold text-lg text-on-surface">최근 보고서</h3>
+<button class="text-primary text-xs font-semibold hover:underline">전체 보기</button>
+</div>
+<div class="space-y-3">
+<!-- Result Item 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl editorial-shadow border border-outline-variant/10 flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="description">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-semibold text-sm text-on-surface truncate">eml_req_v2.4_final.eml</h4>
+<p class="text-[10px] text-on-surface-variant">분석 완료 Oct 23 • 09:12</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="px-2 py-1 bg-tertiary-container/20 text-tertiary text-[9px] font-bold rounded-full uppercase tracking-tighter">심각</span>
+</div>
+</div>
+<!-- Result Item 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl editorial-shadow border border-outline-variant/10 flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="description">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="font-semibold text-sm text-on-surface truncate">internal_comm_alpha.msg</h4>
+<p class="text-[10px] text-on-surface-variant">분석 완료 Oct 23 • 09:12</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="px-2 py-1 bg-secondary-container/30 text-on-secondary-container text-[9px] font-bold rounded-full uppercase tracking-tighter">수정 요청</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Detailed Requirements Section (Mock Selected View) -->
+<section class="space-y-4 bg-surface-container-low/50 -mx-5 px-5 py-8">
+<div class="space-y-2">
+<h3 class="font-bold text-lg text-on-surface">상세 결과</h3>
+<div class="bg-surface-container-lowest p-4 rounded-xl border-l-4 border-primary">
+<p class="text-xs font-semibold text-primary uppercase mb-2">AI 요약</p>
+<p class="text-sm text-on-surface-variant leading-relaxed">분석 결과, 페이로드 직렬화 및 메타데이터 일관성과 관련된 EML 아키텍처에서 3개의 심각한 기술적 결함이 발견되었습니다. 섹션 4.2에 대한 우선 조치가 필요합니다.</p>
+</div>
+</div>
+<div class="space-y-4 pt-2">
+<!-- Requirement Card 1 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl editorial-shadow space-y-3">
+<div class="flex justify-between items-start">
+<span class="text-[10px] font-bold text-outline tracking-widest uppercase">REQ-802</span>
+<div class="flex items-center gap-1.5 px-2 py-0.5 bg-error-container/20 text-error rounded-md">
+<span class="material-symbols-outlined text-sm" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-[9px] font-black uppercase">심각</span>
+</div>
+</div>
+<p class="text-sm font-semibold text-on-surface">SMTP 헤더 유효성 검사 누락</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">현재 구현은 사용자 정의 x-헤더에 대한 RFC 5322 준수 여부를 검증하지 못합니다.</p>
+<div class="pt-2 flex gap-2">
+<button class="flex-1 py-2 text-[10px] font-bold border border-outline-variant/30 rounded-lg uppercase tracking-tight text-on-surface">상세 정보</button>
+<button class="flex-1 py-2 text-[10px] font-bold bg-primary text-on-primary rounded-lg uppercase tracking-tight">WBS 등록</button>
+</div>
+</div>
+<!-- Requirement Card 2 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl editorial-shadow space-y-3">
+<div class="flex justify-between items-start">
+<span class="text-[10px] font-bold text-outline tracking-widest uppercase">REQ-915</span>
+<div class="flex items-center gap-1.5 px-2 py-0.5 bg-secondary-container/20 text-secondary rounded-md">
+<span class="material-symbols-outlined text-sm" data-icon="task">task</span>
+<span class="text-[9px] font-black uppercase">작업</span>
+</div>
+</div>
+<p class="text-sm font-semibold text-on-surface">MIME 유형 매핑 업데이트</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">최신 application/vnd 표준을 포함하도록 지원되는 미디어 유형을 업데이트하십시오.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe pt-2 bg-[#F8F9FA]/90 dark:bg-slate-900/95 backdrop-blur-md z-50 rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)] border-t border-[#E7E8E9] dark:border-slate-800">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-xl px-3 py-1.5 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-0.5">Dashboard</span>
+</a>
+<!-- Analysis -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 px-3 py-1.5 hover:text-blue-600 dark:hover:text-blue-200 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-0.5">Analysis</span>
+</a>
+<!-- History -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 px-3 py-1.5 hover:text-blue-600 dark:hover:text-blue-200 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="history">history</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-0.5">History</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 px-3 py-1.5 hover:text-blue-600 dark:hover:text-blue-200 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="settings">settings</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-0.5">Settings</span>
+</a>
+</nav>
+</body></html>

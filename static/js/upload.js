@@ -1,138 +1,69 @@
 /**
- * Upload Zone Handler
- * 드래그앤드롭 및 클릭 기반 파일 업로드
+ * upload.js — 대시보드의 EML 업로드
+ * 파일을 하나씩 서버 메일함(가상 '업로드' 계정)에 저장하고 분석 대기열에 올린다.
+ * 결과는 메일 화면에서 대기 → 분석중 → 완료로 이어서 볼 수 있다.
  */
-class UploadZone {
-    constructor(zoneElement, inputElement, onFilesReady) {
-        this.zone = zoneElement;
-        this.input = inputElement;
-        this.onFilesReady = onFilesReady;
-        this.selectedFiles = [];
+(function (global) {
+    'use strict';
+    const esc = escapeHtml;
+    let busy = false;
 
-        this.init();
-    }
-
-    init() {
-        this.setupDragDrop();
-        this.setupClickUpload();
-    }
-
-    setupDragDrop() {
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            this.zone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            this.zone.addEventListener(eventName, () => {
-                this.zone.classList.add('upload-zone-active');
-            }, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            this.zone.addEventListener(eventName, () => {
-                this.zone.classList.remove('upload-zone-active');
-            }, false);
-        });
-
-        this.zone.addEventListener('drop', (e) => {
-            const files = [...e.dataTransfer.files];
-            this.handleFiles(files);
+    function init() {
+        const zone = document.getElementById('upload-zone');
+        const input = document.getElementById('file-input');
+        if (!zone || !input) return;
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+        ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, () => zone.classList.add('upload-zone-active')));
+        ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, () => zone.classList.remove('upload-zone-active')));
+        zone.addEventListener('drop', e => send([...e.dataTransfer.files]));
+        zone.addEventListener('click', e => { if (!e.target.closest('a,button[data-action]')) input.click(); });
+        input.addEventListener('change', () => { send([...input.files]); input.value = ''; });
+        document.getElementById('upload-result')?.addEventListener('click', e => {
+            if (e.target.closest('[data-action="open-uploads"]')) Router.go('mail?tab=all&acct=upload');
         });
     }
 
-    setupClickUpload() {
-        // 존 클릭 시 파일 선택 다이얼로그 열기 (버튼 제외)
-        this.zone.addEventListener('click', (e) => {
-            // 버튼 또는 그 자식 요소를 클릭했으면 무시
-            if (e.target.closest('button')) {
-                return;
+    async function send(files) {
+        if (busy) { toast('이전 업로드가 끝난 뒤 다시 시도하세요.', 'error'); return; }
+        const emls = files.filter(f => f.name.toLowerCase().endsWith('.eml'));
+        if (!emls.length) { toast('EML 파일을 선택해 주세요.', 'error'); return; }
+        busy = true;
+        const status = document.getElementById('upload-status');
+        const result = document.getElementById('upload-result');
+        const created = [], dups = [], errors = [];
+        try {
+            for (let i = 0; i < emls.length; i++) {
+                const f = emls[i];
+                status.textContent = `업로드 중 ${i + 1} / ${emls.length} · ${f.name}`;
+                const form = new FormData();
+                form.append('file', f, f.name);
+                try {
+                    const r = await api('/api/upload', { method: 'POST', form, silent: true });
+                    if (r.created && r.success) { created.push(r.created); Store.upsert(r.created); }
+                    else if (r.duplicate) dups.push(f.name);
+                    else errors.push({ filename: f.name, message: r.error?.message || '저장 실패' });
+                } catch (e) {
+                    errors.push({ filename: f.name, message: e.message });
+                }
             }
-            // 아이콘이나 텍스트 같은 다른 요소들은 처리
-            if (e.target.tagName !== 'BUTTON') {
-                this.input.click();
-            }
-        });
-
-        // 파일 선택 input 이벤트
-        this.input.addEventListener('change', (e) => {
-            this.handleFiles([...e.target.files]);
-        });
-    }
-
-    handleFiles(files) {
-        // EML 파일만 필터링
-        const emlFiles = files.filter(f => f.name.toLowerCase().endsWith('.eml'));
-
-        if (emlFiles.length === 0) {
-            this.showToast('EML 파일을 선택해주세요.', 'error');
-            return;
+        } finally {
+            busy = false;
+            status.textContent = '';
         }
-
-        this.selectedFiles = emlFiles;
-        this.updateUI();
-
-        // 콜백 실행
-        if (this.onFilesReady) {
-            this.onFilesReady(this.selectedFiles);
-        }
+        Bus.emit('queue-changed');
+        Bus.emit('mail-changed', {});
+        const lines = [];
+        if (created.length) lines.push(`<p class="text-green-700"><b>${created.length}건</b>을 저장했고 분석 대기열에 올렸습니다.</p>`);
+        if (dups.length) lines.push(`<p class="text-slate-500">이미 있는 메일 ${dups.length}건은 건너뛰었습니다: ${esc(dups.slice(0, 5).join(', '))}${dups.length > 5 ? ' 외' : ''}</p>`);
+        errors.forEach(er => lines.push(`<p class="text-red-600">${esc(er.filename)}: ${esc(er.message)}</p>`));
+        result.innerHTML = `<div class="rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm space-y-1">
+            ${lines.join('')}
+            <button type="button" data-action="open-uploads" class="mt-1 inline-flex items-center gap-1 text-primary font-semibold hover:underline">
+              <span class="material-symbols-outlined text-base">inbox</span>메일 화면에서 보기</button></div>`;
+        result.classList.remove('hidden');
+        if (created.length && !errors.length) toast(`${created.length}건 업로드 완료 · 분석을 시작합니다.`, 'success');
+        else if (errors.length) toast(`${errors.length}건은 저장하지 못했습니다.`, 'error');
     }
 
-    updateUI() {
-        // 파일 목록 표시 (선택된 파일 개수 표시)
-        const count = this.selectedFiles.length;
-        const fileNames = this.selectedFiles.map(f => f.name).join(', ');
-
-        // 버튼 텍스트 업데이트
-        const button = this.zone.querySelector('button');
-        if (button) {
-            button.textContent = count > 0 ? `${count}개 파일 선택됨 - 분석 시작` : '분석 시작';
-        }
-
-        // 파일 목록을 콘솔에도 출력
-        console.log('Selected files:', this.selectedFiles);
-    }
-
-    clear() {
-        this.selectedFiles = [];
-        this.input.value = '';
-        this.updateUI();
-    }
-
-    showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast fixed bottom-24 lg:bottom-8 right-4 px-4 py-3 rounded-lg text-sm font-medium z-50 ${
-            type === 'error' ? 'bg-error text-on-error' :
-            type === 'success' ? 'bg-green-600 text-white' :
-            'bg-primary text-on-primary'
-        }`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.classList.add('hide');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
-    getFiles() {
-        return this.selectedFiles;
-    }
-}
-
-/**
- * Global upload zone initialization
- */
-document.addEventListener('DOMContentLoaded', () => {
-    const uploadZoneEl = document.getElementById('upload-zone');
-    const fileInput = document.getElementById('file-input');
-
-    if (uploadZoneEl && fileInput) {
-        window.uploadZone = new UploadZone(uploadZoneEl, fileInput, (files) => {
-            // 파일 선택 후 콜백 (app.js에서 처리)
-            console.log('Files ready for upload:', files);
-        });
-    }
-});
+    global.Upload = { init };
+})(window);
