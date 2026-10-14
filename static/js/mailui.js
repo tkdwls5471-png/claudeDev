@@ -135,6 +135,25 @@
             return r.affected || 0;
         },
 
+        /** 발신자·도메인 제외 규칙 추가: 기존 메일 몇 건이 제외되는지 보여 주고 확인받는다. 추가되면 true */
+        async addRule(kind, value) {
+            let p;
+            try { p = await api('/api/sender-rules/preview', { method: 'POST', json: { kind, value } }); }
+            catch (_) { return false; }
+            const what = kind === 'domain' ? `'${p.value}' 도메인(하위 도메인 포함)` : `'${p.value}'`;
+            const msg = `${what}에서 오는 메일을 앞으로 자동으로 '제외'하고 분석하지 않습니다.`
+                + (p.matches ? `\n이미 받은 메일 ${p.matches}건도 제외합니다 (완료한 메일은 그대로).` : '')
+                + `\n\n설정 > 발신자 제외 규칙에서 언제든 되돌릴 수 있습니다. 추가할까요?`;
+            if (!confirm(msg)) return false;
+            try {
+                const r = await api('/api/sender-rules', { method: 'POST', json: { kind, value: p.value, apply_existing: true } });
+                toast(`규칙을 추가했습니다.${r.affected ? ` 기존 메일 ${r.affected}건을 제외했습니다.` : ''}`, 'success');
+                Bus.emit('mail-changed', { bulk: true });
+                Bus.emit('rules-changed');
+                return true;
+            } catch (_) { return false; }
+        },
+
         async exportExcel(ids) {
             if (!ids.length) { toast('다운로드할 메일을 선택하세요.', 'error'); return; }
             try {
@@ -149,6 +168,15 @@
         },
     };
 
+    /** '홍길동 <Hong@A.co.kr>' → { address: 'hong@a.co.kr', domain: 'a.co.kr' } */
+    function parseSender(sender) {
+        const s = String(sender || '');
+        const m = /<([^<>\s]+@[^<>\s]+)>/.exec(s) || /([^\s<>"']+@[^\s<>"']+)/.exec(s);
+        const address = m ? m[1].toLowerCase() : '';
+        return { address, domain: address ? address.split('@').pop() : '' };
+    }
+
+    global.parseSender = parseSender;
     global.Badges = Badges;
     global.MailActions = MailActions;
 })(window);

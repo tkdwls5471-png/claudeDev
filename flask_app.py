@@ -497,6 +497,7 @@ def patch_email(email_id):
                 e.completed_at = timeutil.utcnow() if done else None
         if 'is_excluded' in data:
             e.is_excluded = bool(data['is_excluded'])
+            e.exclude_reason = None          # 직접 바꾼 경우 규칙 표시를 지운다
             if e.is_excluded and e.analysis_status == 'queued':
                 e.analysis_status, e.analysis_next_at = 'none', None
         if 'is_read' in data:
@@ -570,10 +571,10 @@ def bulk_emails():
         elif action == 'uncomplete':
             n = upd(Email.is_completed == True, is_completed=False, completed_at=None)  # noqa: E712
         elif action == 'exclude':
-            n = upd(None, is_excluded=True)
+            n = upd(None, is_excluded=True, exclude_reason=None)
             upd(Email.analysis_status == 'queued', analysis_status='none', analysis_next_at=None)
         elif action == 'unexclude':
-            n = upd(None, is_excluded=False)
+            n = upd(None, is_excluded=False, exclude_reason=None)
         elif action == 'read':
             n = upd(None, is_read=True)
         elif action == 'unread':
@@ -867,6 +868,88 @@ def import_legacy_uploads():
             imported += 1
         db.commit()
         return jsonify(success=True, imported=imported)
+    finally:
+        db.close()
+
+
+# ─── 발신자·도메인 제외 규칙 ──────────────────────────────────────────────────
+
+def _rule_json(db, r):
+    ids = es.user_account_ids(db, current_user.id, active_only=False)
+    excluded = db.query(func.count(Email.id)).filter(
+        Email.account_id.in_(ids or [-1]), Email.is_excluded == True,  # noqa: E712
+        Email.exclude_reason == es.rule_label(r.kind, r.value)).scalar() or 0
+    return {'id': r.id, 'kind': r.kind, 'value': r.value, 'excluded_count': excluded,
+            'created_at': timeutil.to_kst_str(r.created_at)}
+
+
+@app.route('/api/sender-rules', methods=['GET'])
+@login_required
+def list_sender_rules():
+    from db import SenderRule
+    db = SessionLocal()
+    try:
+        rules = db.query(SenderRule).filter_by(user_id=current_user.id).order_by(SenderRule.created_at.desc()).all()
+        return jsonify(rules=[_rule_json(db, r) for r in rules],
+                       suggestions=es.suggest_domains(db, current_user.id))
+    finally:
+        db.close()
+
+
+@app.route('/api/sender-rules/preview', methods=['POST'])
+@login_required
+def preview_sender_rule():
+    """규칙을 만들기 전에: 정리된 값과, 기존 메일 중 새로 제외될 건수."""
+    data = request.get_json() or {}
+    try:
+        value = es.normalize_rule(data.get('kind'), data.get('value'))
+    except ValueError as ex:
+        return jsonify(success=False, message=str(ex)), 400
+    db = SessionLocal()
+    try:
+        return jsonify(success=True, kind=data.get('kind'), value=value,
+                       matches=es.count_rule_matches(db, current_user.id, data.get('kind'), value))
+    finally:
+        db.close()
+
+
+@app.route('/api/sender-rules', methods=['POST'])
+@login_required
+def add_sender_rule():
+    from db import SenderRule
+    data = request.get_json() or {}
+    kind = data.get('kind')
+    try:
+        value = es.normalize_rule(kind, data.get('value'))
+    except ValueError as ex:
+        return jsonify(success=False, message=str(ex)), 400
+    db = SessionLocal()
+    try:
+        r = db.query(SenderRule).filter_by(user_id=current_user.id, kind=kind, value=value).first()
+        if r is None:
+            r = SenderRule(user_id=current_user.id, kind=kind, value=value)
+            db.add(r)
+            db.commit()
+        affected = es.apply_rule_to_existing(db, current_user.id, kind, value) if data.get('apply_existing', True) else 0
+        return jsonify(success=True, rule=_rule_json(db, r), affected=affected)
+    finally:
+        db.close()
+
+
+@app.route('/api/sender-rules/<int:rule_id>', methods=['DELETE'])
+@login_required
+def delete_sender_rule(rule_id):
+    """규칙 삭제. ?restore=1 이면 그 규칙으로 자동 제외됐던 메일도 되돌린다."""
+    from db import SenderRule
+    db = SessionLocal()
+    try:
+        r = db.query(SenderRule).filter_by(id=rule_id, user_id=current_user.id).first()
+        if r is None:
+            return jsonify(success=False, message='규칙을 찾을 수 없습니다'), 404
+        restored = es.restore_rule(db, current_user.id, r.kind, r.value) if request.args.get('restore') == '1' else 0
+        db.delete(r)
+        db.commit()
+        return jsonify(success=True, restored=restored)
     finally:
         db.close()
 

@@ -374,6 +374,25 @@
                 </div>
             </div>
 
+            <div id="sender-rules-card" class="mt-6 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-primary text-lg">filter_alt</span>
+                    <h3 class="font-bold text-on-surface">발신자 제외 규칙</h3>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">광고·알림처럼 업무가 아닌 메일을 보내는 주소나 도메인을 등록하면, 그 메일은 받자마자 '제외'로 가고 AI 분석을 하지 않습니다(토큰 절약). 지워지지 않으며 메일 화면의 '제외' 탭에서 볼 수 있습니다. 메일 상세의 ⋯ 메뉴에서도 바로 추가할 수 있습니다.</p>
+                <form id="rule-form" class="flex flex-wrap gap-2 mb-3">
+                    <select id="rule-kind" class="px-3 py-2 text-sm border border-outline-variant/30 rounded-lg bg-white focus:ring-2 focus:ring-primary/40">
+                        <option value="domain">도메인</option>
+                        <option value="sender">발신자 주소</option>
+                    </select>
+                    <input id="rule-value" type="text" placeholder="예) mail.anthropic.com 또는 no-reply@slack.com" autocomplete="off"
+                        class="flex-1 min-w-[12rem] px-3 py-2 text-sm border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40"/>
+                    <button type="submit" class="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-container whitespace-nowrap">규칙 추가</button>
+                </form>
+                <div id="rule-suggestions" class="mb-3"></div>
+                <div id="rules-list" class="space-y-2"></div>
+            </div>
+
             <div class="mt-6 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
                 <div class="flex items-center justify-between mb-4">
                     <div>

@@ -139,6 +139,7 @@
         ].join('');
 
         const busy = r.analysis_status === 'queued' || r.analysis_status === 'running';
+        const sp = parseSender(r.sender);
         const aiDeadline = (d.analysis_result || {}).마감일_원문 || (d.analysis_result || {}).마감일 || '';
         $('[data-ref="actions"]').innerHTML = `
           <button type="button" data-action="complete" class="panel-btn ${r.is_completed ? 'panel-btn-on-green' : 'panel-btn-green'}" title="완료 (e)">
@@ -156,12 +157,17 @@
             <span class="material-symbols-outlined text-base">${r.is_read ? 'mark_email_unread' : 'drafts'}</span>${r.is_read ? '안읽음' : '읽음'}</button>
           <div class="relative ml-auto">
             <button type="button" data-action="more" class="panel-icon-btn" title="더보기"><span class="material-symbols-outlined">more_horiz</span></button>
-            <div data-ref="menu" class="hidden absolute right-0 top-full mt-1 z-30 w-44 py-1 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/20 text-sm">
+            <div data-ref="menu" class="hidden absolute right-0 top-full mt-1 z-30 w-60 py-1 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/20 text-sm">
               <button type="button" data-action="copy-sender" class="menu-item"><span class="material-symbols-outlined text-base">content_copy</span>발신자 복사</button>
+              ${sp.domain ? `<button type="button" data-action="rule-domain" class="menu-item" title="${esc(sp.domain)}"><span class="material-symbols-outlined text-base">domain_disabled</span><span class="min-w-0"><span class="block">이 도메인 항상 제외</span><span class="block text-[11px] text-slate-400 truncate">${esc(sp.domain)}</span></span></button>` : ''}
+              ${sp.address ? `<button type="button" data-action="rule-sender" class="menu-item" title="${esc(sp.address)}"><span class="material-symbols-outlined text-base">person_off</span><span class="min-w-0"><span class="block">이 발신자 항상 제외</span><span class="block text-[11px] text-slate-400 truncate">${esc(sp.address)}</span></span></button>` : ''}
               ${d.can_reprocess ? '<button type="button" data-action="reprocess" class="menu-item"><span class="material-symbols-outlined text-base">refresh</span>원본 다시 처리</button>' : ''}
               <button type="button" data-action="delete" class="menu-item text-red-600"><span class="material-symbols-outlined text-base">delete</span>앱에서 삭제</button>
             </div>
           </div>
+          ${r.exclude_reason ? `<p class="w-full text-[11px] text-slate-500 flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">filter_alt</span>자동 제외됨 · ${esc(r.exclude_reason)}
+              <button type="button" data-action="goto-rules" class="underline underline-offset-2 hover:text-primary ml-1">규칙 관리</button></p>` : ''}
           ${r.deadline_manual && aiDeadline ? `<p class="w-full text-[11px] text-slate-400">AI가 찾은 마감: ${esc(aiDeadline)}
               <button type="button" data-action="reset-deadline" class="underline underline-offset-2 hover:text-primary ml-1">AI 값으로 되돌리기</button></p>`
             : (!r.deadline_manual && aiDeadline && !r.deadline ? `<p class="w-full text-[11px] text-slate-400">AI가 찾은 마감 표현: ${esc(aiDeadline)}</p>` : '')}`;
@@ -377,6 +383,16 @@
             case 'copy-sender': copyToClipboard(Store.get(id)?.sender, t); break;
             case 'copy': copyToClipboard(t.dataset.text, t); break;
             case 'show-images': showRemoteImages(); break;
+            case 'rule-domain':
+            case 'rule-sender': {
+                const sp = parseSender(Store.get(id)?.sender);
+                const kind = t.dataset.action === 'rule-domain' ? 'domain' : 'sender';
+                MailActions.addRule(kind, kind === 'domain' ? sp.domain : sp.address).then(ok => {
+                    if (ok) api(`/api/emails/${id}`, { silent: true }).then(row => Store.upsert(row)).catch(() => {});
+                });
+                break;
+            }
+            case 'goto-rules': Router.go('settings'); setTimeout(() => document.getElementById('sender-rules-card')?.scrollIntoView({ behavior: 'smooth' }), 300); break;
         }
     }
 

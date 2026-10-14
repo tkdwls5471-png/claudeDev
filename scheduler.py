@@ -107,6 +107,7 @@ def _sync_locked(account_id) -> dict:
             return {'status': 'error', 'new': 0, 'error': err}
 
         auto_on = es.auto_analyze_enabled(db, acc.user_id)
+        rules = es.load_rules(db, acc.user_id)
         with session:
             uidvalidity = session.select_inbox()
             if uidvalidity and acc.uidvalidity and uidvalidity != acc.uidvalidity:
@@ -129,7 +130,7 @@ def _sync_locked(account_id) -> dict:
                     continue
                 _, status = es.ingest_message(
                     db, acc, str(uid), raw,
-                    queue_mode='auto' if auto_on else 'none', advance_uid=uid)
+                    queue_mode='auto' if auto_on else 'none', advance_uid=uid, rules=rules)
                 if status in ('created', 'failed'):
                     new += 1
 

@@ -81,6 +81,7 @@ class Email(Base):
     is_completed     = Column(Boolean, nullable=False, default=False, server_default=_FALSE)
     completed_at     = Column(DateTime)
     is_excluded      = Column(Boolean, nullable=False, default=False, server_default=_FALSE)
+    exclude_reason   = Column(String(300))               # 규칙으로 자동 제외된 경우 그 규칙 (직접 제외면 NULL)
     deadline         = Column(Date)
     deadline_manual  = Column(Boolean, nullable=False, default=False, server_default=_FALSE)
 
@@ -109,6 +110,17 @@ class Email(Base):
         Index('ix_eml_emails_acc_msgid', 'account_id', 'message_id'),
         Index('ix_eml_emails_queue', 'analysis_status', 'analysis_next_at'),
     )
+
+
+class SenderRule(Base):
+    """발신자·도메인 제외 규칙: 맞는 메일은 수신 즉시 '제외'로 보내고 분석하지 않는다."""
+    __tablename__ = 'eml_sender_rules'
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    user_id    = Column(Integer, ForeignKey('eml_users.id'), nullable=False)
+    kind       = Column(String(10), nullable=False)      # sender | domain
+    value      = Column(String(255), nullable=False)     # 소문자 메일 주소 또는 도메인
+    created_at = Column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint('user_id', 'kind', 'value', name='uq_eml_sender_rule'),)
 
 
 class Setting(Base):

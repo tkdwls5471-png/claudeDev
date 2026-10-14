@@ -430,6 +430,7 @@
         const cls = ['mail-row', r.is_read ? '' : 'unread', r.id === cursorId ? 'is-cursor' : '',
             selected.has(r.id) ? 'is-selected' : '', stale ? 'is-stale' : '', r.is_completed ? 'is-done' : ''].join(' ');
         const mini = [
+            r.exclude_reason ? `<span class="text-[11px] text-slate-400 flex items-center gap-0.5 shrink-0" title="${esc(r.exclude_reason)}"><span class="material-symbols-outlined text-[13px]">filter_alt</span>자동 제외</span>` : '',
             `<span class="@[900px]:hidden">${Badges.priority(r.priority)}</span>`,
             `<span class="@[720px]:hidden">${Badges.analysis(r, { retry: false })}</span>`,
             `<span class="@[640px]:hidden text-[11px] text-slate-400 truncate">${esc(r.company || r.sender || '')}</span>`,

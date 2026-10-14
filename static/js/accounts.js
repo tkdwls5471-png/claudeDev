@@ -18,6 +18,7 @@
     ];
 
     function load() {
+        loadRules();
         loadAccounts();
         loadApiKeys();
         loadAnalysisPrompt();
@@ -185,6 +186,65 @@
             btn.disabled = false;
         }
     };
+
+    // ─── 발신자 제외 규칙 ────────────────────────────────────────────────────
+    let rulesBound = false;
+
+    async function loadRules() {
+        const list = document.getElementById('rules-list');
+        const sug = document.getElementById('rule-suggestions');
+        if (!list) return;
+        if (!rulesBound) bindRules();
+        let d;
+        try { d = await api('/api/sender-rules', { silent: true }); }
+        catch (_) { list.innerHTML = '<p class="text-sm text-red-400">규칙을 불러오지 못했습니다.</p>'; return; }
+
+        list.innerHTML = d.rules.length ? d.rules.map(r => `
+            <div class="flex items-center gap-3 px-4 py-2.5 bg-surface-container-low rounded-lg">
+              <span class="material-symbols-outlined text-slate-400">${r.kind === 'domain' ? 'domain_disabled' : 'person_off'}</span>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold text-on-surface truncate">${esc(r.value)}</p>
+                <p class="text-xs text-slate-500">${r.kind === 'domain' ? '도메인 (하위 도메인 포함)' : '발신자 주소'} · 지금 ${r.excluded_count}건 제외 중 · ${esc((r.created_at || '').slice(0, 10))} 추가</p>
+              </div>
+              <button type="button" data-rule-del="${r.id}" data-count="${r.excluded_count}" class="text-xs px-3 py-1.5 border border-red-200 text-red-500 rounded-lg hover:bg-red-50 shrink-0">삭제</button>
+            </div>`).join('')
+            : '<p class="text-center text-slate-400 py-4 text-sm">등록된 규칙이 없습니다.</p>';
+
+        sug.innerHTML = d.suggestions.length ? `
+            <p class="text-xs text-slate-500 mb-1.5">자주 오는 발신 도메인 — 업무가 아니면 눌러서 바로 추가하세요</p>
+            <div class="flex flex-wrap gap-1.5">${d.suggestions.map(s =>
+                `<button type="button" data-rule-suggest="${esc(s.domain)}" class="facet-chip !py-1">${esc(s.domain)} <span class="opacity-60">${s.count}</span></button>`).join('')}</div>`
+            : '';
+    }
+
+    function bindRules() {
+        rulesBound = true;
+        document.getElementById('rule-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const input = document.getElementById('rule-value');
+            const value = input.value.trim();
+            if (!value) { input.focus(); return; }
+            if (await MailActions.addRule(document.getElementById('rule-kind').value, value)) input.value = '';
+        });
+        document.getElementById('rule-suggestions').addEventListener('click', async e => {
+            const b = e.target.closest('[data-rule-suggest]');
+            if (b) await MailActions.addRule('domain', b.dataset.ruleSuggest);
+        });
+        document.getElementById('rules-list').addEventListener('click', async e => {
+            const b = e.target.closest('[data-rule-del]');
+            if (!b) return;
+            const n = Number(b.dataset.count);
+            if (!confirm('이 규칙을 삭제할까요? 앞으로 오는 메일은 다시 분석 대상이 됩니다.')) return;
+            const restore = n > 0 && confirm(`이 규칙으로 제외됐던 메일 ${n}건도 되돌릴까요?\n(취소를 누르면 규칙만 지우고 메일은 '제외'에 그대로 둡니다)`);
+            try {
+                const r = await api(`/api/sender-rules/${b.dataset.ruleDel}`, { method: 'DELETE', query: { restore: restore ? 1 : '' } });
+                toast(`규칙을 삭제했습니다.${r.restored ? ` 메일 ${r.restored}건을 되돌렸습니다.` : ''}`, 'success');
+                Bus.emit('mail-changed', { bulk: true });
+                loadRules();
+            } catch (_) {}
+        });
+        Bus.on('rules-changed', () => { if (Router.route === 'settings') loadRules(); });
+    }
 
     // ─── 메일 계정 ───────────────────────────────────────────────────────────
     async function loadAccounts() {

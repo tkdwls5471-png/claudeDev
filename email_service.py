@@ -262,6 +262,125 @@ def delete_email_files(e: Email):
         delete_original(e.raw_stored)
 
 
+# ─── 발신자·도메인 제외 규칙 ──────────────────────────────────────────────────
+
+def sender_address(sender):
+    """'홍길동 <Hong@A.co.kr>' → 'hong@a.co.kr' (주소가 없으면 '')."""
+    import email.utils
+    addr = email.utils.parseaddr(sender or '')[1].strip().lower()
+    return addr if '@' in addr else ''
+
+
+def sender_domain(sender):
+    addr = sender_address(sender)
+    return addr.rsplit('@', 1)[1] if addr else ''
+
+
+def normalize_rule(kind, value):
+    """규칙 값 정리. 잘못되면 ValueError."""
+    v = (value or '').strip().lower()
+    if kind == 'sender':
+        v = sender_address(v) or v
+        if not re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', v):
+            raise ValueError('메일 주소 형식이 아닙니다')
+    elif kind == 'domain':
+        v = v.lstrip('@').lstrip('.')
+        if '@' in v:
+            v = v.rsplit('@', 1)[1]
+        if not re.fullmatch(r'[\w-]+(\.[\w-]+)+', v):   # 한글 도메인(IDN)도 허용
+            raise ValueError('도메인 형식이 아닙니다 (예: example.com)')
+    else:
+        raise ValueError('알 수 없는 규칙 종류입니다')
+    return v[:255]
+
+
+def rule_label(kind, value):
+    return f"{'발신자' if kind == 'sender' else '도메인'} 규칙: {value}"
+
+
+def match_rule(sender, rules):
+    """sender가 맞는 첫 규칙 (kind, value) 또는 None. 도메인 규칙은 하위 도메인도 포함."""
+    addr = sender_address(sender)
+    if not addr:
+        return None
+    domain = addr.rsplit('@', 1)[1]
+    for kind, value in rules:
+        if kind == 'sender' and addr == value:
+            return kind, value
+        if kind == 'domain' and (domain == value or domain.endswith('.' + value)):
+            return kind, value
+    return None
+
+
+def load_rules(db, user_id):
+    from db import SenderRule
+    return [(r.kind, r.value) for r in db.query(SenderRule).filter_by(user_id=user_id)]
+
+
+def _rule_candidates(db, account_ids, kind, value):
+    """규칙에 맞을 수 있는 메일 (LIKE로 좁힌 뒤 파이썬에서 정확히 확인)."""
+    needle = value if kind == 'sender' else value
+    q = db.query(Email).filter(Email.account_id.in_(account_ids), Email.sender.ilike(f'%{needle}%'))
+    return [e for e in q if match_rule(e.sender, [(kind, value)])]
+
+
+def count_rule_matches(db, user_id, kind, value):
+    ids = user_account_ids(db, user_id, active_only=False)
+    if not ids:
+        return 0
+    return sum(1 for e in _rule_candidates(db, ids, kind, value) if not e.is_excluded)
+
+
+def apply_rule_to_existing(db, user_id, kind, value):
+    """기존 메일 중 규칙에 맞고 아직 제외되지 않은 것을 제외한다 (완료한 메일은 그대로). 반환: 건수."""
+    ids = [a.id for a in user_accounts(db, user_id, active_only=False) if (a.kind or 'imap') == 'imap']
+    if not ids:
+        return 0
+    n = 0
+    reason = rule_label(kind, value)
+    for e in _rule_candidates(db, ids, kind, value):
+        if e.is_excluded or e.is_completed:
+            continue
+        e.is_excluded = True
+        e.exclude_reason = reason
+        if e.analysis_status == 'queued':
+            e.analysis_status, e.analysis_next_at = 'none', None
+        n += 1
+    db.commit()
+    return n
+
+
+def restore_rule(db, user_id, kind, value):
+    """규칙을 지울 때: 그 규칙으로 자동 제외됐던 메일을 되돌린다. 반환: 건수."""
+    ids = user_account_ids(db, user_id, active_only=False)
+    if not ids:
+        return 0
+    r = db.execute(
+        update(Email).where(Email.account_id.in_(ids), Email.is_excluded == True,  # noqa: E712
+                            Email.exclude_reason == rule_label(kind, value))
+        .values(is_excluded=False, exclude_reason=None)
+        .execution_options(synchronize_session=False))
+    db.commit()
+    return r.rowcount
+
+
+def suggest_domains(db, user_id, limit=8):
+    """제외 규칙 후보: 자주 오는 발신 도메인 (내 메일 계정 도메인·이미 규칙 있는 도메인 제외)."""
+    from collections import Counter
+    accounts = user_accounts(db, user_id, active_only=False)
+    ids = [a.id for a in accounts]
+    if not ids:
+        return []
+    own = {sender_domain(a.email_address) for a in accounts if a.email_address and '@' in a.email_address}
+    rules = load_rules(db, user_id)
+    cnt = Counter()
+    for (sender,) in db.query(Email.sender).filter(Email.account_id.in_(ids), Email.is_excluded == False):  # noqa: E712
+        d = sender_domain(sender)
+        if d and d not in own and not match_rule(sender, rules):
+            cnt[d] += 1
+    return [{'domain': d, 'count': c} for d, c in cnt.most_common(limit) if c >= 2]
+
+
 # ─── 수집 (동기화·업로드 공용) ────────────────────────────────────────────────
 
 def _should_auto_queue(received_at):
@@ -272,7 +391,7 @@ def _should_auto_queue(received_at):
 
 def ingest_message(db, account: EmailAccount, uid_str: str, raw: bytes, *,
                    queue_mode='none', advance_uid=None, raw_stored=None,
-                   is_read=False, fallback_subject=None):
+                   is_read=False, fallback_subject=None, rules=None):
     """메일 1건 저장. 반환: (email_id 또는 None, 'created' | 'duplicate' | 'failed').
 
     1단계: 헤더만으로 최소 행을 만들고 (동기화면 last_uid와 함께) 커밋한다.
@@ -347,7 +466,12 @@ def ingest_message(db, account: EmailAccount, uid_str: str, raw: bytes, *,
         e.attachments_json = json.dumps(atts, ensure_ascii=False)
         e.has_attachments = bool(atts)
         e.body_html = html if len(html) <= BODY_HTML_MAX else ''
-        if queue_mode == 'force':
+        hit = match_rule(e.sender, rules) if rules else None
+        if hit:   # 제외 규칙에 맞음 → 바로 '제외', 분석하지 않음
+            e.is_excluded = True
+            e.exclude_reason = rule_label(*hit)
+            e.analysis_status = 'none'
+        elif queue_mode == 'force':
             e.analysis_status, e.analysis_priority = 'queued', PRIORITY_MANUAL
         elif queue_mode == 'auto' and _should_auto_queue(received_at):
             e.analysis_status, e.analysis_priority = 'queued', PRIORITY_AUTO
@@ -533,6 +657,7 @@ def to_row(e: Email, kinds: dict) -> dict:
         'is_completed': bool(e.is_completed),
         'completed_at': timeutil.to_kst_str(e.completed_at),
         'is_excluded': bool(e.is_excluded),
+        'exclude_reason': e.exclude_reason if e.is_excluded else None,
         'deadline': e.deadline.isoformat() if e.deadline else None,
         'deadline_manual': bool(e.deadline_manual),
         'priority': e.priority,
