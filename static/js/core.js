@@ -150,10 +150,6 @@
         const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
         return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN;
     }
-    function addDays(ymd, n) {
-        const t = ymdToMs(ymd);
-        return isNaN(t) ? ymd : new Date(t + n * DAY).toISOString().slice(0, 10);
-    }
     /** 마감일까지 남은 일수 (오늘=0, 지남=음수) */
     function daysUntil(ymd) {
         const t = ymdToMs(ymd);
@@ -185,11 +181,6 @@
         if (ymd === todayStr()) return kstStr.slice(11, 16) || ymd;
         if (ymd.slice(0, 4) === todayStr().slice(0, 4)) return ymd.slice(5);
         return ymd;
-    }
-    /** Date → KST 'YYYY-MM-DD HH:MM' */
-    function toKstString(date) {
-        const d = new Date(date.getTime() + 9 * 3600000);
-        return isNaN(d) ? '' : d.toISOString().slice(0, 16).replace('T', ' ');
     }
 
     // ─── 외부 HTML을 안전하게 표시 ──────────────────────────────────────────
@@ -249,10 +240,7 @@
     // ─── 내보내기 ────────────────────────────────────────────────────────────
     Object.assign(global, {
         escapeHtml, Bus, api, ApiError, toast, copyToClipboard, renderPager,
-        DateUtil: { todayStr, addDays, daysUntil, ddayLabel, parseKst, relativeTime, shortDate, toKstString, ymdToMs },
+        DateUtil: { todayStr, daysUntil, ddayLabel, parseKst, relativeTime, shortDate },
         renderSandboxedHtml,
     });
-    // 옛 코드 호환 이름
-    global.showToast = toast;
-    global.escHtml = escapeHtml;
 })(window);

@@ -106,7 +106,7 @@
                 ${acc.status === 'error' && acc.error ? `<p class="text-xs text-red-600 mt-0.5 break-words">${esc(acc.error)}</p>` : ''}
               </div>
             </li>`).join('')
-            : '<li class="text-xs text-slate-500 py-1.5">연결된 메일 계정이 없습니다. <button type="button" data-action="settings" class="underline">설정에서 추가</button></li>';
+            : '<li class="text-xs text-slate-500 py-1.5">연결된 메일 계정이 없습니다. <button type="button" data-action="settings" data-tab="accounts" class="underline">설정에서 추가</button></li>';
         el.pop.innerHTML = `
           <div class="p-4 space-y-4">
             <section>
@@ -125,7 +125,7 @@
               </div>
               ${a.paused ? `<p class="text-xs text-red-600 bg-red-50 rounded-lg px-2.5 py-1.5 mb-2 break-words">
                   분석을 잠시 멈췄습니다 (${esc(a.paused.until?.slice(11) || '')}까지): ${esc(a.paused.reason)}
-                  ${String(a.paused.reason).startsWith('[설정 오류]') ? '<button type="button" data-action="settings" class="underline font-semibold">AI 설정 확인</button>' : ''}</p>` : ''}
+                  ${String(a.paused.reason).startsWith('[설정 오류]') ? '<button type="button" data-action="settings" data-tab="ai" class="underline font-semibold">AI 설정 확인</button>' : ''}</p>` : ''}
               ${a.running ? `<button type="button" data-action="open" data-id="${a.running.id}" class="w-full text-left flex items-center gap-2 text-sm py-1 hover:text-primary">
                   <span class="analyze-spinner"></span><span class="truncate">${esc(a.running.subject || '(제목 없음)')}</span></button>` : ''}
               <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
@@ -184,7 +184,7 @@
             Router.go('mail?tab=all&sort=received');
         } else if (a === 'settings') {
             togglePopover(false);
-            Router.go('settings');
+            Router.go(`settings?tab=${t.dataset.tab || "accounts"}`);
         }
     }
 

@@ -1,49 +1,73 @@
 /**
- * accounts.js — 설정 화면 (자동 분석, AI 모델, API 키, 분석 지침, 메일 계정)
+ * settings.js — 설정 화면 (#settings?tab=accounts|ai|rules)
+ *  - 메일 계정: 목록·테스트·삭제, 추가 모달(이메일 주소로 서버 자동 채움)
+ *  - AI 분석: 자동 분석, 프로바이더·모델(+ 고른 프로바이더의 API 키), 분석 지침
+ *  - 제외 규칙: 발신자·도메인 규칙과 추천 도메인
  */
 (function (global) {
     'use strict';
     const esc = escapeHtml;
 
+    const TABS = ['accounts', 'ai', 'rules'];
+    // 메일 도메인 → IMAP 서버
     const PRESETS = {
-        daum:    { server: 'imap.daum.net',         port: 993 },
-        kakao:   { server: 'imap.kakao.com',        port: 993 },
-        gmail:   { server: 'imap.gmail.com',        port: 993 },
-        naver:   { server: 'imap.naver.com',        port: 993 },
-        outlook: { server: 'outlook.office365.com', port: 993 },
+        'daum.net': 'imap.daum.net', 'hanmail.net': 'imap.daum.net',
+        'kakao.com': 'imap.kakao.com',
+        'gmail.com': 'imap.gmail.com',
+        'naver.com': 'imap.naver.com',
+        'outlook.com': 'outlook.office365.com', 'hotmail.com': 'outlook.office365.com',
     };
-    const API_KEY_PROVIDERS = [
-        { id: 'anthropic', label: 'Anthropic (Claude)', placeholder: 'sk-ant-...' },
-        { id: 'openai', label: 'OpenAI (GPT)', placeholder: 'sk-...' },
-    ];
+    const KEY_PROVIDERS = {
+        anthropic: { label: 'Anthropic API 키', placeholder: 'sk-ant-...' },
+        openai: { label: 'OpenAI API 키', placeholder: 'sk-...' },
+    };
 
-    function load() {
-        loadRules();
-        loadAccounts();
-        loadApiKeys();
-        loadAnalysisPrompt();
-        loadLlmSettings();
-        loadAutoAnalyzeSetting();
+    let tab = 'accounts';
+    const loaded = new Set();     // 이번 방문에서 불러온 탭
+
+    function apply(params, entering) {
+        const t = params.get('tab');
+        tab = TABS.includes(t) ? t : 'accounts';
+        if (entering) loaded.clear();
+        document.querySelectorAll('[data-settings-tab]').forEach(b => b.classList.toggle('active', b.dataset.settingsTab === tab));
+        document.querySelectorAll('[data-settings-pane]').forEach(p => p.classList.toggle('hidden', p.dataset.settingsPane !== tab));
+        if (loaded.has(tab)) return;
+        loaded.add(tab);
+        if (tab === 'accounts') loadAccounts();
+        else if (tab === 'ai') { loadAutoAnalyze(); loadLlmSettings(); loadAnalysisPrompt(); }
+        else loadRules();
     }
 
-    // ─── 자동분석 토글 ───────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('settings-tabs')?.addEventListener('click', e => {
+            const b = e.target.closest('[data-settings-tab]');
+            if (b) Router.go(`settings?tab=${b.dataset.settingsTab}`, { replace: true });
+        });
+        bindRules();
+        bindAccountModal();
+    });
+
+    function setStatus(id, ok, text) {
+        const s = document.getElementById(id);
+        s.textContent = text;
+        s.className = `text-xs ${ok ? 'text-green-600' : 'text-red-500'}`;
+    }
+
+    // ─── 자동 분석 ───────────────────────────────────────────────────────────
     function renderAutoToggle(enabled) {
         const btn = document.getElementById('auto-analyze-toggle');
-        if (!btn) return;
         btn.dataset.enabled = enabled ? '1' : '0';
         btn.setAttribute('aria-checked', String(enabled));
         btn.className = 'relative shrink-0 w-12 h-7 rounded-full transition-colors ' + (enabled ? 'bg-primary' : 'bg-slate-300');
-        const knob = btn.querySelector('span');
-        if (knob) knob.className = 'absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform' + (enabled ? ' translate-x-5' : '');
+        btn.querySelector('span').className = 'absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform' + (enabled ? ' translate-x-5' : '');
     }
 
-    async function loadAutoAnalyzeSetting() {
+    async function loadAutoAnalyze() {
         try { renderAutoToggle(!!(await api('/api/settings/auto-analyze', { silent: true })).enabled); } catch (_) {}
     }
 
     global.toggleAutoAnalyze = async function () {
-        const btn = document.getElementById('auto-analyze-toggle');
-        const next = btn.dataset.enabled !== '1';
+        const next = document.getElementById('auto-analyze-toggle').dataset.enabled !== '1';
         renderAutoToggle(next);
         try {
             const r = await api('/api/settings/auto-analyze', { method: 'PUT', json: { enabled: next } });
@@ -57,126 +81,109 @@
 
     // ─── 분석 지침 ───────────────────────────────────────────────────────────
     async function loadAnalysisPrompt() {
-        const ta = document.getElementById('settings-analysis-prompt');
-        if (!ta) return;
-        try { ta.value = (await api('/api/settings/prompt', { silent: true })).prompt || ''; } catch (_) {}
+        try { document.getElementById('settings-analysis-prompt').value = (await api('/api/settings/prompt', { silent: true })).prompt || ''; } catch (_) {}
     }
 
     global.saveAnalysisPrompt = async function () {
-        const ta = document.getElementById('settings-analysis-prompt');
-        const status = document.getElementById('analysis-prompt-status');
         try {
-            await api('/api/settings/prompt', { method: 'PUT', json: { prompt: ta.value } });
-            status.textContent = '✓ 저장되었습니다. 이후 모든 분석(자동 포함)에 적용됩니다.';
-            status.className = 'text-xs text-green-600';
+            await api('/api/settings/prompt', { method: 'PUT', json: { prompt: document.getElementById('settings-analysis-prompt').value } });
+            setStatus('analysis-prompt-status', true, '✓ 저장했습니다. 이후 모든 분석에 적용됩니다.');
         } catch (e) {
-            status.textContent = e.message;
-            status.className = 'text-xs text-red-500';
+            setStatus('analysis-prompt-status', false, e.message);
         }
     };
 
-    // ─── API 키 ──────────────────────────────────────────────────────────────
-    async function loadApiKeys() {
-        const box = document.getElementById('api-keys-list');
-        if (!box) return;
-        let st = {};
-        try { st = await api('/api/settings/keys', { silent: true }); } catch (_) {}
-        box.innerHTML = API_KEY_PROVIDERS.map(p => {
-            const s = st[p.id] || {};
-            const badge = s.set
-                ? `<span class="badge badge-green">✓ 저장됨 (${esc(s.preview || '')})</span>`
-                : '<span class="badge badge-amber">미설정</span>';
-            return `
-              <div class="p-4 border border-outline-variant/20 rounded-lg">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-sm font-semibold text-on-surface">${esc(p.label)}</span>${badge}
-                </div>
-                <div class="flex gap-2">
-                  <input type="password" id="key-input-${p.id}" placeholder="${esc(p.placeholder)}" autocomplete="off"
-                      class="flex-1 px-3 py-2 text-sm border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-primary/40"/>
-                  <button type="button" data-key-save="${p.id}" class="px-4 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-container whitespace-nowrap">저장</button>
-                  ${s.set ? `<button type="button" data-key-del="${p.id}" class="px-3 border border-red-200 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 whitespace-nowrap">삭제</button>` : ''}
-                </div>
-              </div>`;
-        }).join('');
-        box.onclick = async e => {
-            const save = e.target.closest('[data-key-save]');
-            const del = e.target.closest('[data-key-del]');
-            if (save) {
-                const id = save.dataset.keySave;
-                const val = document.getElementById(`key-input-${id}`)?.value?.trim();
-                if (!val) { toast('API 키를 입력하세요.', 'error'); return; }
-                try {
-                    await api(`/api/settings/keys/${id}`, { method: 'PUT', json: { api_key: val } });
-                    toast('API 키를 저장했습니다. 멈춰 있던 분석이 다시 시작됩니다.', 'success');
-                    loadApiKeys();
-                    Bus.emit('queue-changed');
-                } catch (_) {}
-            } else if (del) {
-                if (!confirm('저장된 API 키를 삭제할까요? 이 프로바이더를 쓰고 있다면 이후 분석이 멈춥니다.')) return;
-                try {
-                    await api(`/api/settings/keys/${del.dataset.keyDel}`, { method: 'DELETE' });
-                    toast('API 키를 삭제했습니다.', 'success');
-                    loadApiKeys();
-                } catch (_) {}
-            }
-        };
-    }
-
-    // ─── LLM 설정 ────────────────────────────────────────────────────────────
+    // ─── AI 모델 + API 키 ────────────────────────────────────────────────────
     let llmOptions = { remote: [], anthropic: [], openai: [] };
+    let keyState = {};
 
     async function loadLlmSettings() {
-        const prov = document.getElementById('llm-provider');
-        if (!prov) return;
-        try {
-            const d = await api('/api/settings/llm', { silent: true });
-            llmOptions = d.options || llmOptions;
-            prov.value = d.provider || 'remote';
-            fillModels(d.model);
-        } catch (_) {}
+        const [llm, keys] = await Promise.all([
+            api('/api/settings/llm', { silent: true }).catch(() => null),
+            api('/api/settings/keys', { silent: true }).catch(() => ({})),
+        ]);
+        keyState = keys || {};
+        if (llm) {
+            llmOptions = llm.options || llmOptions;
+            document.getElementById('llm-provider').value = llm.provider || 'remote';
+            fillModels(llm.model);
+        }
+        renderKeyRow();
     }
 
+    function provider() { return document.getElementById('llm-provider').value || 'remote'; }
+
     function fillModels(selected) {
-        const prov = document.getElementById('llm-provider');
         const sel = document.getElementById('llm-model');
-        const list = llmOptions[prov.value] || [];
-        sel.innerHTML = list.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+        const list = llmOptions[provider()] || [];
+        sel.innerHTML = list.length ? list.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('')
+            : '<option value="">(조회된 모델 없음)</option>';
         if (selected && list.includes(selected)) sel.value = selected;
+    }
+
+    /** 고른 프로바이더가 API 키를 쓰면 그 키 하나만 보여 준다 */
+    function renderKeyRow() {
+        const box = document.getElementById('api-key-row');
+        const p = KEY_PROVIDERS[provider()];
+        box.classList.toggle('hidden', !p);
+        if (!p) { box.innerHTML = ''; return; }
+        const s = keyState[provider()] || {};
+        box.innerHTML = `
+          <label class="field-label" for="key-input">${esc(p.label)}
+            ${s.set ? `<span class="badge badge-green ml-1">저장됨 ${esc(s.preview || '')}</span>` : '<span class="badge badge-amber ml-1">미설정</span>'}</label>
+          <div class="flex gap-2">
+            <input type="password" id="key-input" placeholder="${s.set ? '바꾸려면 새 키 입력' : esc(p.placeholder)}" autocomplete="off" class="field-input flex-1"/>
+            ${s.set ? '<button type="button" data-key-del class="btn-plain !text-red-600">삭제</button>' : ''}
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">DB에 암호화해 저장하며 브라우저에는 남기지 않습니다. 아래 '저장'을 누르면 함께 저장됩니다.</p>`;
+        box.querySelector('[data-key-del]')?.addEventListener('click', deleteKey);
+    }
+
+    async function deleteKey() {
+        if (!confirm('저장된 API 키를 삭제할까요? 이 프로바이더를 쓰고 있다면 이후 분석이 멈춥니다.')) return;
+        try {
+            await api(`/api/settings/keys/${provider()}`, { method: 'DELETE' });
+            keyState[provider()] = { set: false };
+            renderKeyRow();
+            toast('API 키를 삭제했습니다.', 'success');
+        } catch (_) {}
     }
 
     global.onLlmProviderChange = function () {
         fillModels(null);
-        document.getElementById('llm-test-result')?.classList.add('hidden');
+        renderKeyRow();
+        document.getElementById('llm-test-result').classList.add('hidden');
     };
 
     global.saveLlmSettings = async function () {
-        const provider = document.getElementById('llm-provider').value || 'remote';
-        const model = document.getElementById('llm-model').value || '';
-        const status = document.getElementById('llm-settings-status');
+        const p = provider();
+        const key = document.getElementById('key-input')?.value.trim();
         try {
-            await api('/api/settings/llm', { method: 'PUT', json: { provider, model } });
-            status.textContent = '✓ 저장되었습니다.';
-            status.className = 'text-xs text-green-600';
+            if (key) {
+                const r = await api(`/api/settings/keys/${p}`, { method: 'PUT', json: { api_key: key } });
+                keyState[p] = { set: true, preview: r.preview };
+            }
+            await api('/api/settings/llm', { method: 'PUT', json: { provider: p, model: document.getElementById('llm-model').value || '' } });
+            renderKeyRow();
+            setStatus('llm-settings-status', true, '✓ 저장했습니다. 멈춰 있던 분석이 있으면 다시 시작합니다.');
             Bus.emit('queue-changed');
         } catch (e) {
-            status.textContent = e.message;
-            status.className = 'text-xs text-red-500';
+            setStatus('llm-settings-status', false, e.message);
         }
     };
 
     global.testLlmConnection = async function () {
-        const provider = document.getElementById('llm-provider').value || 'remote';
-        const model = document.getElementById('llm-model').value || '';
         const btn = document.getElementById('llm-test-btn');
         const out = document.getElementById('llm-test-result');
-        const typedKey = document.getElementById(`key-input-${provider}`)?.value?.trim() || undefined;
+        const json = {
+            provider: provider(), model: document.getElementById('llm-model').value || '',
+            api_key: document.getElementById('key-input')?.value.trim() || undefined,
+        };
         btn.disabled = true;
-        out.classList.remove('hidden');
         out.className = 'mt-3 text-xs px-3 py-2 rounded-lg bg-slate-100 text-slate-500';
         out.textContent = '연결 확인 중...';
         try {
-            const d = await api('/api/settings/llm/test', { method: 'POST', json: { provider, model, api_key: typedKey }, silent: true });
+            const d = await api('/api/settings/llm/test', { method: 'POST', json, silent: true });
             out.className = `mt-3 text-xs px-3 py-2 rounded-lg ${d.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`;
             out.textContent = d.ok ? `✓ 연결 성공 — ${d.provider}/${d.model} (${d.latency_ms}ms)` : `✗ 연결 실패 — ${d.message}`;
         } catch (e) {
@@ -188,13 +195,8 @@
     };
 
     // ─── 발신자 제외 규칙 ────────────────────────────────────────────────────
-    let rulesBound = false;
-
     async function loadRules() {
         const list = document.getElementById('rules-list');
-        const sug = document.getElementById('rule-suggestions');
-        if (!list) return;
-        if (!rulesBound) bindRules();
         let d;
         try { d = await api('/api/sender-rules', { silent: true }); }
         catch (_) { list.innerHTML = '<p class="text-sm text-red-400">규칙을 불러오지 못했습니다.</p>'; return; }
@@ -210,15 +212,14 @@
             </div>`).join('')
             : '<p class="text-center text-slate-400 py-4 text-sm">등록된 규칙이 없습니다.</p>';
 
-        sug.innerHTML = d.suggestions.length ? `
-            <p class="text-xs text-slate-500 mb-1.5">자주 오는 발신 도메인 — 업무가 아니면 눌러서 바로 추가하세요</p>
+        document.getElementById('rule-suggestions').innerHTML = d.suggestions.length ? `
+            <p class="text-xs text-slate-500 mb-1.5">자주 오는 발신 도메인 — 업무 메일이 아니면 눌러서 바로 추가하세요</p>
             <div class="flex flex-wrap gap-1.5">${d.suggestions.map(s =>
                 `<button type="button" data-rule-suggest="${esc(s.domain)}" class="facet-chip !py-1">${esc(s.domain)} <span class="opacity-60">${s.count}</span></button>`).join('')}</div>`
             : '';
     }
 
     function bindRules() {
-        rulesBound = true;
         document.getElementById('rule-form').addEventListener('submit', async e => {
             e.preventDefault();
             const input = document.getElementById('rule-value');
@@ -243,23 +244,24 @@
                 loadRules();
             } catch (_) {}
         });
-        Bus.on('rules-changed', () => { if (Router.route === 'settings') loadRules(); });
+        Bus.on('rules-changed', () => { if (Router.route === 'settings' && tab === 'rules') loadRules(); else loaded.delete('rules'); });
     }
 
     // ─── 메일 계정 ───────────────────────────────────────────────────────────
     async function loadAccounts() {
         const box = document.getElementById('accounts-list');
-        if (!box) return;
         try {
             const accs = await api('/api/accounts', { silent: true });
             if (!accs.length) {
-                box.innerHTML = '<p class="text-center text-slate-400 py-6 text-sm">연결된 계정이 없습니다.</p>';
+                box.innerHTML = `<div class="text-center py-8">
+                    <p class="text-slate-500 text-sm mb-3">연결된 메일 계정이 없습니다.</p>
+                    <button type="button" onclick="openAddAccountModal()" class="btn-primary mx-auto"><span class="material-symbols-outlined text-sm">add</span>첫 계정 추가</button></div>`;
                 return;
             }
             box.innerHTML = accs.map(a => `
               <div class="flex items-center justify-between gap-3 p-4 bg-surface-container-low rounded-xl">
                 <div class="flex items-start gap-3 min-w-0">
-                  <span class="material-symbols-outlined text-primary mt-0.5">mail</span>
+                  <span class="status-dot mt-1.5 ${a.last_sync_status === 'error' ? 'status-dot-error' : a.last_sync_status === 'ok' ? 'status-dot-ok' : 'status-dot-idle'}"></span>
                   <div class="min-w-0">
                     <p class="font-semibold text-sm text-on-surface truncate">${esc(a.label || a.email_address)}</p>
                     <p class="text-xs text-slate-500 truncate">${esc(a.email_address)} · ${esc(a.imap_server)}:${Number(a.imap_port)}</p>
@@ -281,7 +283,7 @@
                     test.disabled = true;
                     try {
                         const d = await api(`/api/accounts/${test.dataset.accTest}/test`, { method: 'POST', silent: true });
-                        toast(d.success ? '✓ ' + d.message : '✗ ' + d.message, d.success ? 'success' : 'error');
+                        toast((d.success ? '✓ ' : '✗ ') + d.message, d.success ? 'success' : 'error');
                     } catch (er) { toast('✗ ' + er.message, 'error'); }
                     test.disabled = false;
                 } else if (del) {
@@ -294,35 +296,44 @@
         }
     }
 
+    const $v = id => document.getElementById(id);
+
     function form() {
-        const v = id => document.getElementById(id).value;
         return {
-            label: v('acc-label').trim(), email_address: v('acc-email').trim(),
-            imap_server: v('acc-server').trim(), imap_port: parseInt(v('acc-port'), 10) || 993,
-            imap_username: v('acc-username').trim(), imap_password: v('acc-password'), use_ssl: true,
+            label: $v('acc-label').value.trim(), email_address: $v('acc-email').value.trim(),
+            imap_server: $v('acc-server').value.trim(), imap_port: parseInt($v('acc-port').value, 10) || 993,
+            imap_username: $v('acc-username').value.trim(), imap_password: $v('acc-password').value, use_ssl: true,
         };
     }
     function accError(msg) {
-        const el = document.getElementById('acc-error');
-        el.textContent = msg;
-        el.classList.toggle('hidden', !msg);
+        $v('acc-error').textContent = msg;
+        $v('acc-error').classList.toggle('hidden', !msg);
+    }
+
+    /** 이메일 주소를 입력하면 서버·아이디를 채운다 (사용자가 직접 고친 값은 건드리지 않음) */
+    function bindAccountModal() {
+        $v('acc-email').addEventListener('input', () => {
+            const email = $v('acc-email').value.trim();
+            const domain = email.split('@')[1]?.toLowerCase() || '';
+            const server = $v('acc-server'), user = $v('acc-username');
+            if (!server.dataset.touched) server.value = PRESETS[domain] || (domain ? `imap.${domain}` : '');
+            if (!user.dataset.touched) user.value = email;
+        });
+        ['acc-server', 'acc-username'].forEach(id => $v(id).addEventListener('input', e => { e.target.dataset.touched = '1'; }));
     }
 
     global.openAddAccountModal = function () {
-        document.getElementById('add-account-modal').classList.remove('hidden');
+        $v('add-account-modal').classList.remove('hidden');
         accError('');
-        ['acc-label', 'acc-email', 'acc-server', 'acc-username', 'acc-password'].forEach(id => { document.getElementById(id).value = ''; });
-        document.getElementById('acc-port').value = '993';
-        document.getElementById('acc-preset').value = '';
+        ['acc-label', 'acc-email', 'acc-server', 'acc-username', 'acc-password'].forEach(id => {
+            $v(id).value = '';
+            delete $v(id).dataset.touched;
+        });
+        $v('acc-port').value = '993';
+        $v('acc-email').focus();
     };
     global.closeAddAccountModal = function () {
-        document.getElementById('add-account-modal').classList.add('hidden');
-    };
-    global.applyPreset = function () {
-        const p = PRESETS[document.getElementById('acc-preset').value];
-        if (!p) return;
-        document.getElementById('acc-server').value = p.server;
-        document.getElementById('acc-port').value = p.port;
+        $v('add-account-modal').classList.add('hidden');
     };
     global.testAccountConn = async function (btn) {
         const d = form();
@@ -337,7 +348,7 @@
     };
     global.submitAddAccount = async function (btn) {
         const d = form();
-        if (!d.email_address || !d.imap_server || !d.imap_username || !d.imap_password) { accError('모든 필드를 입력하세요'); return; }
+        if (!d.email_address || !d.imap_server || !d.imap_username || !d.imap_password) { accError('이메일 주소, 비밀번호, 서버, 아이디를 입력하세요'); return; }
         btn.disabled = true; btn.textContent = '추가 중...';
         accError('');
         try {
@@ -350,5 +361,5 @@
         finally { btn.disabled = false; btn.textContent = '추가'; }
     };
 
-    global.Settings = { load };
+    global.Settings = { apply };
 })(window);

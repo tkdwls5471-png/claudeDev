@@ -168,6 +168,15 @@ def test_status_endpoint(world, monkeypatch):
     assert j['counts']['todo'] == 5 and j['analysis']['failed'] == 1
     assert j['sync']['accounts'][0]['email_address'] == 'a@example.com'
     assert j['latest_email_id'] == world['m']['fail'].id
+    assert j['analysis']['today'] == 0
+
+
+def test_status_counts_today_analyzed_in_kst(world, db):
+    # 시계: 2026-10-14 10:00 KST. KST 기준 오늘 0시(= 10/13 15:00 UTC) 이후 분석한 것만 센다
+    for name, at in (('due3', datetime(2026, 10, 13, 15, 30)), ('due4', datetime(2026, 10, 13, 14, 59))):
+        db.get(Email, world['m'][name].id).analyzed_at = at
+    db.commit()
+    assert world['a'].get('/api/status').get_json()['analysis']['today'] == 1
 
 
 def test_auto_analyze_toggle_queues_and_unqueues(world, db):

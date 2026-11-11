@@ -1,0 +1,14 @@
+{
+  "name": "eml-analyzer",
+  "private": true,
+  "description": "프론트엔드 CSS 빌드 전용 (Tailwind). 결과물 static/css/tailwind.css는 저장소에 커밋한다.",
+  "scripts": {
+    "build:css": "tailwindcss -i static/src/tailwind.css -o static/css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i static/src/tailwind.css -o static/css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/container-queries": "0.1.1",
+    "@tailwindcss/forms": "0.5.9",
+    "tailwindcss": "3.4.17"
+  }
+}

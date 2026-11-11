@@ -1,6 +1,6 @@
 /**
  * store.js — 메일 Row 저장소 (단일 출처)
- * 목록·상세 패널·일정(Gantt)·대시보드가 같은 Row를 보고, upsert 시 'row' 이벤트로 함께 다시 그린다.
+ * 목록·상세 패널·대시보드가 같은 Row를 보고, upsert 시 'row' 이벤트로 함께 다시 그린다.
  */
 (function (global) {
     'use strict';

@@ -1,7 +1,7 @@
 /**
  * panel.js — 메일 상세 패널 (목록 오른쪽 / 모바일 전체 화면)
- * 헤더에서 바로 완료·마감·제외·재분석·읽음·삭제. 탭: AI 분석 | 원본(누를 때만 로드) | 첨부.
- * 어떤 처리든 Store를 통해 목록·일정에 즉시 반영된다.
+ * 헤더: 완료·마감·제외 (재분석·읽음·규칙·삭제는 ⋯ 메뉴). 탭: AI 분석 | 원본(누를 때만 로드) | 첨부.
+ * 어떤 처리든 Store를 통해 목록에 즉시 반영된다.
  */
 (function (global) {
     'use strict';
@@ -151,17 +151,17 @@
           </label>
           <button type="button" data-action="exclude" class="panel-btn ${r.is_excluded ? 'panel-btn-on' : 'panel-btn-plain'}" title="제외 (x)">
             <span class="material-symbols-outlined text-base">${r.is_excluded ? 'restore_from_trash' : 'visibility_off'}</span>${r.is_excluded ? '제외 해제' : '제외'}</button>
-          <button type="button" data-action="analyze" class="panel-btn panel-btn-plain" ${busy ? 'disabled' : ''} title="AI 분석 다시 하기">
-            <span class="material-symbols-outlined text-base">auto_awesome</span>${r.analysis_status === 'done' ? '재분석' : '분석'}</button>
-          <button type="button" data-action="read" class="panel-btn panel-btn-plain" title="읽음/안읽음 (u)">
-            <span class="material-symbols-outlined text-base">${r.is_read ? 'mark_email_unread' : 'drafts'}</span>${r.is_read ? '안읽음' : '읽음'}</button>
           <div class="relative ml-auto">
             <button type="button" data-action="more" class="panel-icon-btn" title="더보기"><span class="material-symbols-outlined">more_horiz</span></button>
             <div data-ref="menu" class="hidden absolute right-0 top-full mt-1 z-30 w-60 py-1 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/20 text-sm">
+              <button type="button" data-action="analyze" class="menu-item" ${busy ? 'disabled' : ''}><span class="material-symbols-outlined text-base">auto_awesome</span>${r.analysis_status === 'done' ? 'AI 재분석' : 'AI 분석'}</button>
+              <button type="button" data-action="read" class="menu-item"><span class="material-symbols-outlined text-base">${r.is_read ? 'mark_email_unread' : 'drafts'}</span>${r.is_read ? '안읽음으로 표시' : '읽음으로 표시'} <span class="ml-auto text-[11px] text-slate-400">u</span></button>
+              <div class="my-1 border-t border-outline-variant/10"></div>
               <button type="button" data-action="copy-sender" class="menu-item"><span class="material-symbols-outlined text-base">content_copy</span>발신자 복사</button>
               ${sp.domain ? `<button type="button" data-action="rule-domain" class="menu-item" title="${esc(sp.domain)}"><span class="material-symbols-outlined text-base">domain_disabled</span><span class="min-w-0"><span class="block">이 도메인 항상 제외</span><span class="block text-[11px] text-slate-400 truncate">${esc(sp.domain)}</span></span></button>` : ''}
               ${sp.address ? `<button type="button" data-action="rule-sender" class="menu-item" title="${esc(sp.address)}"><span class="material-symbols-outlined text-base">person_off</span><span class="min-w-0"><span class="block">이 발신자 항상 제외</span><span class="block text-[11px] text-slate-400 truncate">${esc(sp.address)}</span></span></button>` : ''}
               ${d.can_reprocess ? '<button type="button" data-action="reprocess" class="menu-item"><span class="material-symbols-outlined text-base">refresh</span>원본 다시 처리</button>' : ''}
+              <div class="my-1 border-t border-outline-variant/10"></div>
               <button type="button" data-action="delete" class="menu-item text-red-600"><span class="material-symbols-outlined text-base">delete</span>앱에서 삭제</button>
             </div>
           </div>
@@ -392,7 +392,7 @@
                 });
                 break;
             }
-            case 'goto-rules': Router.go('settings'); setTimeout(() => document.getElementById('sender-rules-card')?.scrollIntoView({ behavior: 'smooth' }), 300); break;
+            case 'goto-rules': Router.go('settings?tab=rules'); break;
         }
     }
 

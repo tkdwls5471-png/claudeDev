@@ -48,9 +48,6 @@ body { background-color: #f8f9fa; color: #191c1d; }
 }
 .bottom-nav-item.nav-active { background: #eff6ff; color: #1d4ed8; }
 
-#mobile-sidebar.open { display: flex; animation: slideInLeft 0.25s ease-out; }
-@keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-
 /* ─── 상단 현황 표시 ─────────────────────────────────────────────────────── */
 .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; flex-shrink: 0; }
 .status-dot-ok    { background: #22c55e; }
@@ -91,23 +88,13 @@ body { background-color: #f8f9fa; color: #191c1d; }
 .facet-chip-high.active { background: #ef4444; border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.18); }
 .facet-chip-mid.active  { background: #f59e0b; border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.18); }
 .facet-chip-low.active  { background: #10b981; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.18); }
-.facet-summary-chip {
-    display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 600;
-    color: #0047AB; background: rgba(0, 71, 171, 0.10); border-radius: 9999px; padding: 3px 6px 3px 11px; cursor: pointer;
-}
-.facet-summary-chip:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
-
-.date-preset-btn {
-    font-size: 11px; font-weight: 600; color: #5b6b7a; background: rgba(0, 71, 171, 0.06);
-    border-radius: 6px; padding: 3px 8px; cursor: pointer;
-}
-.date-preset-btn:hover { background: #0047AB; color: #fff; }
 
 /* 배지 */
 .badge {
     display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
     font-size: 11px; font-weight: 600; line-height: 1; padding: 4px 8px; border-radius: 9999px;
 }
+.badge, .badge-btn { flex-shrink: 0; white-space: nowrap; }
 .badge-red    { color: #b91c1c; background: #fef2f2; }
 .badge-amber  { color: #b45309; background: #fffbeb; }
 .badge-green  { color: #15803d; background: #f0fdf4; }
@@ -115,6 +102,34 @@ body { background-color: #f8f9fa; color: #191c1d; }
 .badge-violet { color: #6d28d9; background: #f5f3ff; }
 .badge-slate  { color: #475569; background: #f1f5f9; }
 .badge-btn { font-size: 11px; font-weight: 700; color: #0047AB; text-decoration: underline; text-underline-offset: 2px; }
+
+/* 버튼·입력 */
+.btn-primary, .btn-plain {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    font-size: 13px; font-weight: 600; border-radius: 0.5rem; white-space: nowrap;
+}
+.btn-primary { background: #00327d; color: #fff; }
+.btn-primary:hover { background: #0047ab; }
+.btn-plain { color: #475569; border: 1px solid rgba(195,198,213,0.6); background: transparent; }
+.btn-plain:hover { background: #f3f4f5; }
+.btn-primary:disabled, .btn-plain:disabled { opacity: 0.5; cursor: not-allowed; }
+.field-label { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 700; color: #475569; }
+.field-input {
+    width: 100%; padding: 8px 12px; font-size: 14px; background: #fff;
+    border: 1px solid rgba(195,198,213,0.6); border-radius: 0.5rem;
+}
+.field-input:focus { outline: none; border-color: transparent; box-shadow: 0 0 0 2px rgba(0,50,125,0.35); }
+.settings-card { background: #fff; padding: 20px 24px; border-radius: 0.75rem; border: 1px solid rgba(195,198,213,0.25); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.menu-item:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 대시보드 숫자 타일 */
+.stat-tile {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px 18px; text-align: left;
+    background: #fff; border-radius: 0.75rem; border: 1px solid rgba(195,198,213,0.25); box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+button.stat-tile:hover { border-color: rgba(0,71,171,0.35); }
+.stat-label { font-size: 12px; font-weight: 600; color: #64748b; }
+.stat-value { font-family: Manrope, sans-serif; font-size: 28px; font-weight: 800; line-height: 1.1; color: #191c1d; }
 
 /* ─── 메일 화면 ──────────────────────────────────────────────────────────── */
 body[data-route="mail"] #main-inner { max-width: none; }
@@ -124,8 +139,13 @@ body[data-route="mail"] #main-inner { max-width: none; }
 }
 
 .mail-tab {
-    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; white-space: nowrap; flex-shrink: 0;
     font-size: 13px; font-weight: 600; color: #64748b; border-radius: 0.5rem;
+}
+@media (max-width: 639px) {
+    #mail-tabs { width: 100%; }
+    .mail-tabs-main { width: 100%; margin-right: 0; }
+    .mail-tabs-main .mail-tab { flex: 1; justify-content: center; padding: 6px 4px; gap: 4px; }
 }
 .mail-tab:hover { background: rgba(0, 71, 171, 0.06); }
 .mail-tab.active { background: #0047AB; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
@@ -133,12 +153,22 @@ body[data-route="mail"] #main-inner { max-width: none; }
 .mail-tab.active .mail-tab-count { background: rgba(255,255,255,0.25); }
 .mail-tab-count.warn { background: #fee2e2; color: #b91c1c; }
 .mail-tab.active .mail-tab-count.warn { background: #fecaca; color: #991b1b; }
+.mail-tabs-main { display: inline-flex; gap: 2px; padding: 4px; background: #f3f4f5; border-radius: 0.75rem; margin-right: 4px; }
+.mail-tab-sub { font-size: 12px; padding: 5px 9px; color: #94a3b8; }
+.mail-tab-sub.active { background: #475569; }
 
-.view-btn {
-    display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px;
-    font-size: 13px; font-weight: 600; color: #64748b; border-radius: 0.5rem;
+.toolbar-btn {
+    display: inline-flex; align-items: center; gap: 4px; padding: 7px 11px; font-size: 13px; font-weight: 600;
+    color: #475569; background: #f3f4f5; border-radius: 0.5rem; white-space: nowrap;
 }
-.view-btn.active { background: #fff; color: #0047AB; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.toolbar-btn:hover { background: #e7e8e9; }
+.toolbar-btn.active { color: #0047AB; background: rgba(0,71,171,0.10); }
+.toolbar-count { min-width: 18px; padding: 0 5px; border-radius: 9999px; background: #0047AB; color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.filter-chip {
+    display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 600;
+    color: #0047AB; background: rgba(0, 71, 171, 0.10); border-radius: 9999px; padding: 3px 6px 3px 11px;
+}
+.filter-chip:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
 
 .bulk-btn {
     display: inline-flex; align-items: center; gap: 3px; padding: 4px 10px;
@@ -153,9 +183,6 @@ body[data-route="mail"] #main-inner { max-width: none; }
     padding: 8px; text-align: left; font-size: 11px; font-weight: 700; color: #64748b;
     letter-spacing: 0.04em; background: #f3f4f5; border-bottom: 1px solid #e7e8e9; white-space: nowrap;
 }
-.mail-th { cursor: grab; user-select: none; }
-.mail-th.col-dragging { opacity: 0.4; }
-.mail-th.col-drop { box-shadow: inset 3px 0 0 #0047AB; background: rgba(0,71,171,0.10); }
 .mail-row { cursor: pointer; }
 .mail-row > td { border-bottom: 1px solid #edeeef; vertical-align: middle; }
 .mail-row:hover > td { background: rgba(0, 71, 171, 0.04); }
@@ -166,6 +193,16 @@ body[data-route="mail"] #main-inner { max-width: none; }
 .mail-row .mail-subject { color: #334155; }
 .mail-row.unread .mail-subject { font-weight: 700; color: #0f172a; }
 .mail-row.is-done .mail-subject { text-decoration: line-through; color: #94a3b8; }
+.prio-dot { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; }
+.prio-dot-high { background: #ef4444; }
+.prio-dot-mid  { background: #f59e0b; }
+.prio-dot-low  { background: #10b981; }
+/* 표 폭이 좁으면 보낸 곳·수신 열을 숨기고, 보낸 곳은 제목 아래 줄에 보여 준다 */
+.col-sender-inline { display: none; }
+@container (max-width: 639px) {
+    .col-sender, .col-received { display: none; }
+    .col-sender-inline { display: inline; }
+}
 .unread-dot { width: 7px; height: 7px; border-radius: 9999px; background: #0047AB; flex-shrink: 0; }
 
 .complete-toggle {
@@ -206,27 +243,6 @@ body[data-route="mail"] #main-inner { max-width: none; }
 .panel-icon-btn:disabled { opacity: 0.3; }
 .menu-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; text-align: left; }
 .menu-item:hover { background: #f3f4f5; }
-
-/* ─── 일정(Gantt) ────────────────────────────────────────────────────────── */
-.gantt { min-width: 640px; }
-.gantt-row { display: flex; align-items: center; gap: 12px; padding: 4px 6px; border-radius: 0.5rem; cursor: pointer; }
-.gantt-row:hover:not(.gantt-head) { background: rgba(0, 71, 171, 0.05); }
-.gantt-row.is-cursor { background: rgba(0, 71, 171, 0.10); box-shadow: inset 3px 0 0 #0047AB; }
-.gantt-head { cursor: default; position: sticky; top: 0; z-index: 2; border-radius: 0; }
-.gantt-label { width: 13rem; flex-shrink: 0; display: flex; align-items: center; gap: 4px; font-size: 12px; color: #334155; min-width: 0; }
-.gantt-track { position: relative; flex: 1; height: 24px; background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; }
-.gantt-bar {
-    position: absolute; top: 2px; bottom: 2px; min-width: 22px; border-radius: 3px;
-    display: flex; align-items: center; padding: 0 6px; font-size: 10px; font-weight: 700; color: #fff; overflow: hidden;
-}
-.gantt-bar-high { background: #ef4444; }
-.gantt-bar-mid  { background: #f59e0b; }
-.gantt-bar-low  { background: #10b981; }
-.gantt-bar-none { background: #3b82f6; }
-.gantt-bar-done { background: #94a3b8; }
-.gantt-bar-open { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.28) 0 6px, transparent 6px 12px); }
-.gantt-bar-overdue { box-shadow: 0 0 0 2px #b91c1c; }
-.gantt-today { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #ef4444; opacity: 0.6; z-index: 1; }
 
 /* ─── 기타 ───────────────────────────────────────────────────────────────── */
 * { transition: background-color 0.2s ease, border-color 0.2s ease; }
@@ -303,8 +319,7 @@ html.dark .border-primary\/50 { border-color: rgba(250,204,21,0.25) !important; 
 html.dark .text-primary\/60 { color: rgba(250,204,21,0.7) !important; }
 html.dark .ring-primary\/40 { --tw-ring-color: rgba(250,204,21,0.4) !important; }
 
-html.dark #sidebar,
-html.dark #mobile-sidebar { background-color: rgba(38,42,48,0.92) !important; border-color: rgba(255,255,255,0.10) !important; }
+html.dark #sidebar { background-color: rgba(38,42,48,0.92) !important; border-color: rgba(255,255,255,0.10) !important; }
 html.dark header { background-color: rgba(27,30,35,0.85) !important; border-color: rgba(255,255,255,0.10) !important; }
 html.dark #bottom-nav { background-color: rgba(27,30,35,0.92) !important; border-color: rgba(255,255,255,0.10) !important; }
 
@@ -332,9 +347,6 @@ html.dark .facet-chip.active { background: var(--dk-accent); border-color: var(-
 html.dark .facet-chip-high.active { background: #f87171; border-color: #f87171; }
 html.dark .facet-chip-mid.active  { background: #fbbf24; border-color: #fbbf24; }
 html.dark .facet-chip-low.active  { background: #34d399; border-color: #34d399; }
-html.dark .facet-summary-chip { color: var(--dk-accent); background: rgba(250,204,21,0.14); }
-html.dark .date-preset-btn { background: rgba(250,204,21,0.12); color: #d9c25a; }
-html.dark .date-preset-btn:hover { background: var(--dk-accent); color: #1a1a1a; }
 
 html.dark .badge-red    { color: #fca5a5; background: rgba(239,68,68,0.16); }
 html.dark .badge-amber  { color: #fcd34d; background: rgba(245,158,11,0.16); }
@@ -345,10 +357,21 @@ html.dark .badge-slate  { color: #cbd5e1; background: rgba(148,163,184,0.16); }
 html.dark .badge-btn { color: var(--dk-accent); }
 
 html.dark .mail-tab { color: #aab2bd; }
+html.dark .mail-tabs-main { background: #2c3036; }
+html.dark .mail-tab-sub.active { background: #454c56; color: #fff; }
+html.dark .toolbar-btn { background: #31363e; color: #d5dae0; }
+html.dark .toolbar-btn.active { color: var(--dk-accent); background: rgba(250,204,21,0.14); }
+html.dark .toolbar-count { background: var(--dk-accent); color: #1a1a1a; }
+html.dark .filter-chip { color: var(--dk-accent); background: rgba(250,204,21,0.14); }
+html.dark .stat-tile, html.dark .settings-card { background: #262a30; border-color: rgba(255,255,255,0.08); }
+html.dark .stat-value { color: #f1f3f5; }
+html.dark .stat-label, html.dark .field-label { color: #aab2bd; }
+html.dark .btn-primary { background: var(--dk-accent); color: #1a1a1a; }
+html.dark .btn-plain { color: #d5dae0; border-color: rgba(255,255,255,0.14); }
+html.dark .btn-plain:hover { background: #31363e; }
 html.dark .mail-tab.active { background: var(--dk-accent); color: #1a1a1a; }
 html.dark .mail-tab-count { background: rgba(255,255,255,0.12); }
 html.dark .mail-tab-count.warn { background: rgba(239,68,68,0.25); color: #fca5a5; }
-html.dark .view-btn.active { background: #454c56; color: var(--dk-accent); }
 html.dark .bulk-btn { background: #31363e; color: #e8eaed; border-color: rgba(255,255,255,0.12); }
 html.dark .mail-head th { background: #2c3036; color: #aab2bd; border-color: rgba(255,255,255,0.10); }
 html.dark .mail-row > td { border-color: rgba(255,255,255,0.07); }
@@ -369,9 +392,6 @@ html.dark .panel-btn-on { color: #fcd34d; background: rgba(245,158,11,0.18); }
 html.dark .panel-icon-btn:hover:not(:disabled) { background: #31363e; color: #fff; }
 html.dark .menu-item:hover { background: #31363e; }
 html.dark .mail-panel { box-shadow: -8px 0 32px rgba(0,0,0,0.5); }
-html.dark .gantt-track { background-color: #2c3036; border-color: rgba(255,255,255,0.08); }
-html.dark .gantt-label { color: #d5dae0; }
-html.dark .gantt-row.is-cursor { background: rgba(250,204,21,0.08); box-shadow: inset 3px 0 0 var(--dk-accent); }
 /* 샌드박스 iframe 속 원문은 항상 흰 바탕이므로 테두리만 맞춘다 */
 html.dark .sandboxed-html { border-color: rgba(255,255,255,0.12) !important; }
 
