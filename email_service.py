@@ -582,8 +582,7 @@ def list_options():
             defer(Email.recipient))
 
 
-def filtered_query(db, account_ids, *, q='', priorities=(), types=(), unread=False,
-                   range_from=None, range_to=None):
+def filtered_query(db, account_ids, *, q='', priorities=(), types=(), unread=False):
     """탭을 제외한 모든 필터를 적용한 쿼리. 행을 읽을 때는 .options(*list_options())를 붙인다."""
     query = db.query(Email).filter(Email.account_id.in_(account_ids))
     if q:
@@ -599,13 +598,6 @@ def filtered_query(db, account_ids, *, q='', priorities=(), types=(), unread=Fal
         query = query.filter(Email.req_type.in_(list(types)))
     if unread:
         query = query.filter(Email.is_read == False)  # noqa: E712
-    if range_to:
-        query = query.filter(Email.received_at < timeutil.kst_day_start_utc(range_to + timedelta(days=1)))
-    if range_from:
-        query = query.filter(or_(
-            Email.deadline >= range_from,
-            and_(Email.deadline.is_(None), Email.received_at >= timeutil.kst_day_start_utc(range_from)),
-        ))
     return query
 
 

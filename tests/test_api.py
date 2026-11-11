@@ -68,9 +68,6 @@ def test_filters_and_counts_respect_filters(world):
     assert _subjects(c.get('/api/emails?tab=all&unread=1')) == ['due3']
     assert _subjects(c.get('/api/emails?tab=all&type=견적요청')) == ['due3']
     assert set(_subjects(c.get('/api/emails?tab=all&q=overdue'))) == {'overdue'}
-    # 기간(겹침): 10/16~10/31 → 마감이 그 안이거나 이후인 메일 + 마감 없는 메일 중 수신이 기간 안인 것
-    j = c.get('/api/emails?tab=all&range_from=2026-10-16&range_to=2026-10-31').get_json()
-    assert set(_subjects_from(j)) == {'due3', 'due4'}
 
 
 def _subjects_from(j):
@@ -166,16 +163,6 @@ def test_upload_dedupes_against_imap_mail(world, db, fake_imap):
     assert r['duplicate']['source'] == 'imap'
 
 
-def test_legacy_import_is_idempotent(world):
-    c = world['b']
-    items = [{'filename': 'old.eml', 'timestamp': '2026-09-01T10:00:00',
-              'result': {'요구사항_요약': '옛 결과', '마감일': '2026-09-10', '우선순위': '높음', '완료': True}}]
-    assert c.post('/api/upload/legacy', json={'items': items}).get_json()['imported'] == 1
-    assert c.post('/api/upload/legacy', json={'items': items}).get_json()['imported'] == 0
-    rows = c.get('/api/emails?tab=done').get_json()['emails']
-    assert rows[0]['subject'] == 'old.eml' and rows[0]['deadline'] == '2026-09-10' and rows[0]['source'] == 'upload'
-
-
 def test_status_endpoint(world, monkeypatch):
     j = world['a'].get('/api/status').get_json()
     assert j['counts']['todo'] == 5 and j['analysis']['failed'] == 1
@@ -205,12 +192,12 @@ def test_saving_llm_settings_clears_pause(world):
 
 
 def test_sanitizer_blocks_remote_content():
-    import flask_app
+    from routes.html_sanitize import sanitize_email_html
     html = ('<style>body{background:url(https://t.example/a.png)}</style>'
             '<div style="background-image:url(//t.example/b.png)" background="https://t.example/c.png">'
             '<img src="//t.example/d.png"><a href="javascript:alert(1)">x</a>'
             '<img src="x" onerror="alert(1)"></div><link rel=stylesheet href="https://t.example/s.css">')
-    out = flask_app._sanitize_email_html(html, allow_remote_images=False)
+    out = sanitize_email_html(html, allow_remote_images=False)
     assert 't.example/a.png' not in out and 't.example/b.png' not in out and 't.example/c.png' not in out
     assert 'data-blocked-src="//t.example/d.png"' in out
     assert 'javascript:' not in out and 'onerror' not in out and '<link' not in out

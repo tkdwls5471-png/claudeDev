@@ -13,7 +13,7 @@ import os
 import re
 import json
 
-from claude_analyzer import SYSTEM_PROMPT, _prep_image, _html_to_text
+from analysis_prompt import SYSTEM_PROMPT, _prep_image, _html_to_text
 
 MAX_TOKENS = int(os.environ.get('LLM_MAX_TOKENS', 4096))
 LLM_TIMEOUT_SEC = float(os.environ.get('LLM_TIMEOUT_SEC', 180))

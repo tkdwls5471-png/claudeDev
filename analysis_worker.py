@@ -177,7 +177,7 @@ def _process(email_id, user_id):
     finally:
         db.close()   # LLM 호출 동안 DB 커넥션을 잡고 있지 않는다
 
-    from claude_analyzer import SYSTEM_PROMPT
+    from analysis_prompt import SYSTEM_PROMPT
     system_prompt = SYSTEM_PROMPT
     if extra:
         system_prompt += f"\n\n=== 사용자 추가 지침 (우선 반영) ===\n{extra}"
